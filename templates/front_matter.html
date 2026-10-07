@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+  @page {
+    size: {{ page_width }} {{ page_height }};
+    margin: 0;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    width: {{ page_width }};
+    margin: 0;
+    padding: 0;
+    background: #FFFFFF;
+    color: #1A1A1A;
+    font-family: 'EB Garamond', Garamond, Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .fm-page {
+    width: {{ page_width }};
+    height: {{ page_height }};
+    max-height: {{ page_height }};
+    padding: 0.8in 0.8in 0.6in 0.8in;
+    position: relative;
+    page-break-after: always;
+    break-after: page;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #FFFFFF;
+    overflow: hidden;
+  }
+
+  .fm-page.top-aligned {
+    justify-content: flex-start;
+  }
+
+  .fm-title-half {
+    font-family: 'Cinzel', serif;
+    font-size: 16pt;
+    letter-spacing: 0.25em;
+    color: #222222;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .fm-title-main {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32pt;
+    font-weight: 700;
+    line-height: 1.15;
+    color: #000000;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .fm-subtitle {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 13pt;
+    color: #444444;
+    text-align: center;
+    margin-bottom: 24px;
+    max-width: 80%;
+  }
+
+  .fm-author {
+    font-family: 'Cinzel', serif;
+    font-size: 11pt;
+    letter-spacing: 0.2em;
+    color: #111111;
+    text-transform: uppercase;
+    margin-top: 40px;
+    text-align: center;
+  }
+
+  .fm-copyright {
+    font-family: 'EB Garamond', serif;
+    font-size: 8.5pt;
+    line-height: 1.6;
+    color: #444444;
+    text-align: center;
+    max-width: 85%;
+  }
+
+  .fm-dedication {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14pt;
+    line-height: 1.6;
+    color: #222222;
+    text-align: center;
+    max-width: 75%;
+  }
+
+  .fm-heading {
+    font-family: 'Cinzel', serif;
+    font-size: 13pt;
+    letter-spacing: 0.2em;
+    color: #111111;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .fm-text {
+    font-family: 'EB Garamond', serif;
+    font-size: 10.5pt;
+    line-height: 1.55;
+    color: #1A1A1A;
+    text-align: justify;
+    text-justify: inter-word;
+    margin-bottom: 14px;
+  }
+
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: 'EB Garamond', serif;
+    font-size: 9.8pt;
+    line-height: 1.8;
+    color: #1A1A1A;
+    width: 100%;
+    border-bottom: 1px dotted #CCCCCC;
+    padding-bottom: 2px;
+    margin-bottom: 6px;
+  }
+
+  .toc-title {
+    font-family: 'EB Garamond', serif;
+    font-weight: 500;
+  }
+
+  .toc-day {
+    font-family: 'Cinzel', serif;
+    font-size: 8pt;
+    color: #555555;
+    margin-right: 8px;
+  }
+
+  .toc-page {
+    font-family: 'EB Garamond', serif;
+    color: #333333;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+  <!-- PÁGINA 1: Falso Rosto -->
+  <div class="fm-page">
+    <div class="fm-title-half">{{ book_title }}</div>
+  </div>
+
+  <!-- PÁGINA 2: Verso em Branco -->
+  <div class="fm-page"></div>
+
+  <!-- PÁGINA 3: Folha de Rosto -->
+  <div class="fm-page">
+    <h1 class="fm-title-main">{{ book_title }}</h1>
+    <div class="fm-subtitle">{{ subtitle }}</div>
+    <div style="margin: 15px 0;">
+      {% if icon_ramo %}
+        <img src="{{ icon_ramo }}" style="width: 38px; height: auto;" alt="Ramo" />
+      {% else %}
+        <svg width="40" height="24" viewBox="0 0 36 20" fill="none">
+          <path d="M4 16C12 15 20 11 32 4" stroke="#AC855D" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M11 13.5C9.5 10 12.5 7 15.5 8C16.5 9 15.5 12 12.5 13" fill="#BF9A72"/>
+          <path d="M19 10C17.5 6.5 21 3.5 24 5C25.5 6 24 9.5 20.5 9.8" fill="#B38D65"/>
+          <path d="M26 6.5C26 3 30.5 2.5 32 5C33 6.5 30.5 8 27.5 7" fill="#AC855D"/>
+        </svg>
+      {% endif %}
+    </div>
+    <div class="fm-author">{{ author }}</div>
+  </div>
+
+  <!-- PÁGINA 4: Ficha e Copyright -->
+  <div class="fm-page">
+    <div class="fm-copyright">
+      {% if language == 'pt' %}
+        <p style="font-weight: 600; margin-bottom: 8px;">Copyright © {{ year }} por {{ author }}</p>
+        <p style="margin-bottom: 12px;">Todos os direitos reservados. Nenhuma parte desta publicação pode ser reproduzida, distribuída ou transmitida por qualquer meio sem prévia autorização por escrito do autor.</p>
+        <p style="margin-bottom: 12px;">Textos bíblicos citados com base na versão Almeida Revista e Atualizada (ARA) e Nova Versão Internacional (NVI), salvo indicação em contrário.</p>
+      {% else %}
+        <p style="font-weight: 600; margin-bottom: 8px;">Copyright © {{ year }} by {{ author }}</p>
+        <p style="margin-bottom: 12px;">All rights reserved. No part of this publication may be reproduced, distributed, or transmitted in any form or by any means without the prior written permission of the author.</p>
+        <p style="margin-bottom: 12px;">Scripture summaries and paraphrases are authorial reflections designed for personal devotional reading, unless otherwise noted.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- PÁGINA 5: Dedicatória -->
+  <div class="fm-page">
+    <div class="fm-dedication">
+      {% if language == 'pt' %}
+        “A todos os que buscam um refúgio diário de paz e renovação na presença do Pai. Que cada página deste devocional seja um convite amoroso a caminhar mais perto de Deus.”
+      {% else %}
+        “To all who seek a daily refuge of peace and renewal in the presence of the Father. May every page of this devotional be a loving invitation to walk closer with God.”
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- PÁGINA 6: Verso em Branco -->
+  <div class="fm-page"></div>
+
+  <!-- PÁGINA 7: Epígrafe Geral -->
+  <div class="fm-page">
+    <div style="text-align: center; max-width: 80%;">
+      {% if language == 'pt' %}
+        <p style="font-family: 'EB Garamond', serif; font-style: italic; font-size: 13pt; line-height: 1.6; color: #2B231E; margin-bottom: 12px;">
+          “Lâmpada para os meus pés é a tua palavra e luz, para o meu caminho.”
+        </p>
+        <p style="font-family: 'Cinzel', serif; font-size: 9pt; letter-spacing: 0.2em; color: #5C4C40;">
+          SALMO 119:105
+        </p>
+      {% else %}
+        <p style="font-family: 'EB Garamond', serif; font-style: italic; font-size: 13pt; line-height: 1.6; color: #2B231E; margin-bottom: 12px;">
+          “Your word is a lamp to my feet and a light to my path.”
+        </p>
+        <p style="font-family: 'Cinzel', serif; font-size: 9pt; letter-spacing: 0.2em; color: #5C4C40;">
+          PSALM 119:105
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- PÁGINA 8: Verso em Branco -->
+  <div class="fm-page"></div>
+
+  <!-- PÁGINA 9: Introdução (Parte 1) -->
+  <div class="fm-page top-aligned">
+    {% if language == 'pt' %}
+      <div class="fm-heading">Como usar este devocional</div>
+      <div class="fm-text">
+        A vida cristã não é uma corrida de velocidade, mas uma peregrinação de constância e fidelidade. Em um cotidiano repleto de demandas, ruídos e preocupações, cultivar um momento diário a sós com Deus é o segredo para manter o coração ancorado na paz.
+      </div>
+      <div class="fm-text">
+        Este devocional foi concebido com uma estrutura cuidadosa de 30 dias, onde cada dia foi desenhado em exatamente três páginas pensadas para guiar o seu espírito em três etapas essenciais:
+      </div>
+      <div class="fm-text">
+        <strong>1. Abertura e Ancoragem Bíblica (Página 1):</strong> Cada dia começa com um versículo central e uma reflexão inicial que desmistifica o peso da perfeição religiosa e convida você a se aproximar de Deus exatamente onde você está.
+      </div>
+      <div class="fm-text">
+        <strong>2. Aprofundamento e Conexão (Página 2):</strong> Aqui a verdade bíblica é aprofundada, confrontando dilemas cotidianos, ansiedades e desafios com promessas eternas da graça divina.
+      </div>
+      <div class="fm-text">
+        <strong>3. Aplicação e Oração (Página 3):</strong> Fechamos o dia com uma mensagem memorável para guardar no coração ao longo de toda a sua rotina, além de uma oração sincera para selar o seu diálogo diário com o Criador.
+      </div>
+    {% else %}
+      <div class="fm-heading">How to Use This Devotional</div>
+      <div class="fm-text">
+        The Christian life is not a sprint, but a pilgrimage of steady faithfulness. In a daily routine filled with demands, noise, and distractions, setting aside a quiet moment alone with God is the secret to keeping your heart anchored in peace.
+      </div>
+      <div class="fm-text">
+        This devotional is crafted with a thoughtful 30-day journey, where each day spans exactly three pages created to guide your spirit through three essential steps:
+      </div>
+      <div class="fm-text">
+        <strong>1. Scripture Foundation and Opening (Page 1):</strong> Each day opens with a central verse and an initial reflection that removes the burden of religious perfection, inviting you to draw near to God exactly where you are.
+      </div>
+      <div class="fm-text">
+        <strong>2. Deeper Reflection and Connection (Page 2):</strong> Here, timeless biblical truth meets the real dilemmas, quiet anxieties, and honest questions of everyday life through the lens of divine grace.
+      </div>
+      <div class="fm-text">
+        <strong>3. Heart Takeaway and Prayer (Page 3):</strong> We conclude each day with a memorable truth to keep in your heart throughout your routine, alongside an honest prayer to seal your daily dialogue with the Creator.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- PÁGINA 10: Introdução (Parte 2) -->
+  <div class="fm-page top-aligned">
+    {% if language == 'pt' %}
+      <div class="fm-heading">Dicas para sua jornada</div>
+      <div class="fm-text">
+        Para extrair o melhor fruto destes trinta dias, recomendamos algumas atitudes simples:
+      </div>
+      <div class="fm-text">
+        • <strong>Escolha um momento sagrado:</strong> Seja pela manhã cedo ou antes de dormir, separe de dez a quinze minutos sem interrupções de telas ou notificações.
+      </div>
+      <div class="fm-text">
+        • <strong>Leia sem pressa:</strong> Permita que as palavras ecoem em sua mente. Mais vale meditar profundamente em um único parágrafo do que ler apressadamente sem absorver.
+      </div>
+      <div class="fm-text">
+        • <strong>Ore com as suas próprias palavras:</strong> A oração sugerida ao final de cada dia serve como ponto de partida. Sinta-se livre para derramar seu coração diante de Deus com completa honestidade.
+      </div>
+      <div class="fm-text">
+        Que o Senhor ilumine os seus olhos espirituais e renove as suas forças a cada manhã desta abençoada caminhada.
+      </div>
+    {% else %}
+      <div class="fm-heading">Guidance for Your Journey</div>
+      <div class="fm-text">
+        To receive the fullest fruit from these thirty days, consider these simple practices:
+      </div>
+      <div class="fm-text">
+        • <strong>Set aside a dedicated time:</strong> Whether early in the morning or before resting at night, reserve ten to fifteen quiet minutes away from screens and notifications.
+      </div>
+      <div class="fm-text">
+        • <strong>Read unhurriedly:</strong> Allow the words to resonate quietly in your mind. It is far better to meditate deeply on a single thought than to rush through without absorbing it.
+      </div>
+      <div class="fm-text">
+        • <strong>Pray in your own words:</strong> The prayer provided at the end of each day is a starting point. Feel free to pour out your heart before God with complete honesty.
+      </div>
+      <div class="fm-text">
+        May the Lord enlighten the eyes of your heart and renew your strength each morning of this blessed journey.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- PÁGINA 11: Sumário (Dias 1 a 15) -->
+  <div class="fm-page top-aligned">
+    <div class="fm-heading">{% if language == 'pt' %}Sumário{% else %}Contents{% endif %}</div>
+    {% for day in days[:15] %}
+    <div class="toc-item">
+      <span><span class="toc-day">{% if language == 'pt' %}DIA{% else %}DAY{% endif %} {{ day.day }}:</span> <span class="toc-title">{{ day.title }}</span></span>
+      <span class="toc-page">{{ day.page_numbers[0] }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- PÁGINA 12: Sumário (Dias 16 a 30) -->
+  <div class="fm-page top-aligned">
+    <div class="fm-heading">{% if language == 'pt' %}Sumário (Continuação){% else %}Contents (Continued){% endif %}</div>
+    {% for day in days[15:] %}
+    <div class="toc-item">
+      <span><span class="toc-day">{% if language == 'pt' %}DIA{% else %}DAY{% endif %} {{ day.day }}:</span> <span class="toc-title">{{ day.title }}</span></span>
+      <span class="toc-page">{{ day.page_numbers[0] }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- PÁGINA 13: Divisória de Seção Principal -->
+  <div class="fm-page">
+    <div style="text-align: center;">
+      {% if icon_ramo %}
+        <img src="{{ icon_ramo }}" style="width: 42px; height: auto;" alt="Ramo" />
+      {% else %}
+        <svg width="48" height="30" viewBox="0 0 36 20" fill="none">
+          <path d="M4 16C12 15 20 11 32 4" stroke="#333333" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M11 13.5C9.5 10 12.5 7 15.5 8C16.5 9 15.5 12 12.5 13" fill="#555555"/>
+          <path d="M19 10C17.5 6.5 21 3.5 24 5C25.5 6 24 9.5 20.5 9.8" fill="#444444"/>
+          <path d="M26 6.5C26 3 30.5 2.5 32 5C33 6.5 30.5 8 27.5 7" fill="#333333"/>
+        </svg>
+      {% endif %}
+      <div style="font-family: 'Cinzel', serif; font-size: 13pt; letter-spacing: 0.25em; color: #111111; text-transform: uppercase; margin-top: 18px;">
+        {% if language == 'pt' %}Jornada de 30 Dias{% else %}30-Day Journey{% endif %}
+      </div>
+      <div style="font-family: 'EB Garamond', serif; font-style: italic; font-size: 11pt; color: #444444; margin-top: 8px;">
+        {{ book_title }}
+      </div>
+    </div>
+  </div>
+
+  <!-- PÁGINA 14: Verso em Branco -->
+  <div class="fm-page"></div>
+
+</body>
+</html>

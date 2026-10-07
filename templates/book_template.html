@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>{{ book_title }}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+  @page {
+    size: {{ page_width }} {{ page_height }};
+    margin: 0;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    width: {{ page_width }};
+    margin: 0;
+    padding: 0;
+    background: #FFFFFF;
+    color: #1A1A1A;
+    font-family: 'EB Garamond', Garamond, Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .page {
+    width: {{ page_width }};
+    height: {{ page_height }};
+    max-height: {{ page_height }};
+    padding: 0.55in 0.75in 0.55in 0.75in;
+    position: relative;
+    page-break-after: always;
+    break-after: page;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    background: #FFFFFF;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* Running Header */
+  .running-header {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 22px;
+  }
+
+  .running-header-text {
+    font-family: 'Cinzel', serif;
+    font-size: 7.5pt;
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    color: #333333;
+    text-transform: uppercase;
+    padding-bottom: 6px;
+  }
+
+  .running-header-line {
+    width: 100%;
+    height: 0.5pt;
+    background: #CCCCCC;
+  }
+
+  /* Footer */
+  .page-footer {
+    position: absolute;
+    bottom: 0.36in;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-family: 'EB Garamond', serif;
+    font-size: 10pt;
+    color: #222222;
+  }
+
+  /* Day Badge */
+  .day-badge-container {
+    text-align: center;
+    margin-top: 2px;
+    margin-bottom: 10px;
+  }
+
+  .day-badge {
+    display: inline-block;
+    padding: 3px 20px 2px 20px;
+    border: 0.85pt solid #888888;
+    border-radius: 9px;
+    background-color: #F0F0F0;
+    font-family: 'Cinzel', serif;
+    font-size: 8.5pt;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    color: #111111;
+    text-transform: uppercase;
+  }
+
+  /* Title */
+  .day-title {
+    text-align: center;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 25pt;
+    font-weight: 600;
+    line-height: 1.15;
+    color: #000000;
+    margin-bottom: 11px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Floral Ornament */
+  .title-ornament {
+    text-align: center;
+    margin-bottom: 16px;
+    line-height: 1;
+  }
+
+  .title-ornament img.ornament-img {
+    width: 32px;
+    height: auto;
+    display: inline-block;
+  }
+
+  .title-ornament svg {
+    width: 34px;
+    height: 19px;
+    display: inline-block;
+  }
+
+  /* Scripture Card */
+  .scripture-card {
+    background-color: #F4F4F4;
+    border: 0.5pt solid #DEDEDE;
+    border-radius: 8px;
+    padding: 15px 22px 13px 22px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .scripture-text {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 11.5pt;
+    line-height: 1.48;
+    color: #111111;
+    margin-bottom: 7px;
+  }
+
+  .scripture-ref {
+    font-family: 'Cinzel', serif;
+    font-size: 8pt;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    color: #444444;
+    text-transform: uppercase;
+  }
+
+  /* Body Content */
+  .content-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page-2-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 4px;
+  }
+
+  .page-3-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .paragraph {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 11.4pt;
+    line-height: 1.68;
+    color: #151515;
+    text-align: justify;
+    text-justify: inter-word;
+    margin-bottom: 15px;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+
+  .page-2-body .paragraph {
+    margin-bottom: 14px;
+  }
+  .page-2-body .paragraph:last-child {
+    margin-bottom: 0;
+  }
+
+  .page-3-text-group .paragraph {
+    margin-bottom: 18px;
+  }
+  .page-3-text-group .paragraph:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Drop Cap */
+  .dropcap {
+    float: left;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 3.6em;
+    line-height: 0.72;
+    padding-top: 6px;
+    padding-right: 9px;
+    padding-bottom: 1px;
+    color: #000000;
+    font-weight: 500;
+  }
+
+  /* Page 3 Action Cards */
+  .action-cards {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .action-card {
+    background-color: #F4F4F4;
+    border: 0.5pt solid #DEDEDE;
+    border-radius: 8px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .action-icon {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .action-icon img.action-icon-img {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    display: block;
+  }
+
+  .action-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .action-text-container {
+    flex: 1;
+  }
+
+  .action-title {
+    font-family: 'Cinzel', serif;
+    font-size: 8.2pt;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: #111111;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .action-desc {
+    font-family: 'EB Garamond', serif;
+    font-size: 10.6pt;
+    line-height: 1.5;
+    color: #1A1A1A;
+    font-style: italic;
+    text-align: justify;
+    text-justify: inter-word;
+  }
+</style>
+</head>
+<body>
+
+{% for day in days %}
+  <!-- ==================== PÁGINA 1 (DIA {{ day.day }}) ==================== -->
+  <div class="page">
+    <div class="running-header">
+      <div class="running-header-text">{{ book_title }}</div>
+      <div class="running-header-line"></div>
+    </div>
+
+    <div class="day-badge-container">
+      <div class="day-badge">{% if language == 'pt' %}DIA{% else %}DAY{% endif %} {{ day.day }}</div>
+    </div>
+
+    <h1 class="day-title">{{ day.title }}</h1>
+
+    <div class="title-ornament">
+      {% if icon_ramo %}
+        <img src="{{ icon_ramo }}" class="ornament-img" alt="Ornamento" />
+      {% else %}
+        <svg viewBox="0 0 36 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 16C12 15 20 11 32 4" stroke="#AC855D" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M11 13.5C9.5 10 12.5 7 15.5 8C16.5 9 15.5 12 12.5 13" fill="#BF9A72"/>
+          <path d="M19 10C17.5 6.5 21 3.5 24 5C25.5 6 24 9.5 20.5 9.8" fill="#B38D65"/>
+          <path d="M26 6.5C26 3 30.5 2.5 32 5C33 6.5 30.5 8 27.5 7" fill="#AC855D"/>
+          <path d="M15 15.5C13.5 18 16 20.5 18.5 20C19.5 19 18.5 16.5 16 15.5" fill="#BF9A72"/>
+        </svg>
+      {% endif %}
+    </div>
+
+    <div class="scripture-card">
+      <div class="scripture-text">“{{ day.verse.text }}”</div>
+      <div class="scripture-ref">{{ day.verse.reference }}</div>
+    </div>
+
+    <div class="content-body">
+      {% for p in day.page1 %}
+        {% if loop.first %}
+          <div class="paragraph">
+            <span class="dropcap">{{ p[0] }}</span>{{ p[1:] }}
+          </div>
+        {% else %}
+          <div class="paragraph">{{ p }}</div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="page-footer">{{ day.page_numbers[0] }}</div>
+  </div>
+
+  <!-- ==================== PÁGINA 2 (DIA {{ day.day }}) ==================== -->
+  <div class="page">
+    <div class="running-header">
+      <div class="running-header-text">{{ book_title }}</div>
+      <div class="running-header-line"></div>
+    </div>
+
+    <div class="page-2-body">
+      {% for p in day.page2 %}
+        <div class="paragraph">{{ p }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="page-footer">{{ day.page_numbers[1] }}</div>
+  </div>
+
+  <!-- ==================== PÁGINA 3 (DIA {{ day.day }}) ==================== -->
+  <div class="page">
+    <div class="running-header">
+      <div class="running-header-text">{{ book_title }}</div>
+      <div class="running-header-line"></div>
+    </div>
+
+    <div class="page-3-body">
+      <div class="page-3-text-group">
+        {% for p in day.page3 %}
+          <div class="paragraph">{{ p }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="action-cards">
+        <!-- Box 1: Para Guardar no Coração -->
+        <div class="action-card">
+          <div class="action-icon">
+            {% if icon_ramo %}
+              <img src="{{ icon_ramo }}" class="action-icon-img" alt="Ramo" />
+            {% else %}
+              <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 23C5 23 10 20 14 13C18 6 23 4 23 4" stroke="#AC855D" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M14 13C12 9 13.5 5.5 16 5C17.5 6 17 9.5 14 13Z" stroke="#AC855D" stroke-width="1.3" fill="none"/>
+                <path d="M9 17C7 14 8 11 10.5 10.5C12 11.5 11.5 15 9 17Z" stroke="#AC855D" stroke-width="1.3" fill="none"/>
+                <path d="M17.5 9.5C19.5 8 22 9 22 11.5C21 13 18 12.5 17.5 9.5Z" stroke="#AC855D" stroke-width="1.3" fill="none"/>
+              </svg>
+            {% endif %}
+          </div>
+          <div class="action-text-container">
+            <div class="action-title">{{ day.card_heart.title }}</div>
+            <div class="action-desc">{{ day.card_heart.text }}</div>
+          </div>
+        </div>
+
+        <!-- Box 2: Oração de Hoje -->
+        <div class="action-card">
+          <div class="action-icon">
+            {% if icon_maos %}
+              <img src="{{ icon_maos }}" class="action-icon-img" alt="Oração" />
+            {% else %}
+              <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 4V22" stroke="#AC855D" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M14 4C12.5 4 10.5 7 10.5 10.5C10.5 14.5 12 18.5 14 22" stroke="#AC855D" stroke-width="1.5"/>
+                <path d="M14 4C15.5 4 17.5 7 17.5 10.5C17.5 14.5 16 18.5 14 22" stroke="#AC855D" stroke-width="1.5"/>
+                <path d="M8.5 11.5C7 13 6.5 15.5 7.5 18.5C8.5 19.5 11 20 14 20" stroke="#AC855D" stroke-width="1.4" stroke-linecap="round"/>
+                <path d="M19.5 11.5C21 13 21.5 15.5 20.5 18.5C19.5 19.5 17 20 14 20" stroke="#AC855D" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            {% endif %}
+          </div>
+          <div class="action-text-container">
+            <div class="action-title">{{ day.card_prayer.title }}</div>
+            <div class="action-desc">{{ day.card_prayer.text }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">{{ day.page_numbers[2] }}</div>
+  </div>
+{% endfor %}
+
+</body>
+</html>
