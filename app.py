@@ -137,31 +137,44 @@ with st.sidebar:
         st.success("Configurações salvas com sucesso!")
 
     st.markdown("---")
-    st.markdown("### 🚀 Exportação para KDP")
+    st.markdown("---")
+    st.markdown("### 📱 Exportação e-Book (Kindle / EPUB)")
     
-    include_fm = st.checkbox("Incluir Páginas Iniciais (1 a 14)", value=True, help="Adiciona Folha de Rosto, Ficha Catalográfica, Dedicatória, Introdução e Sumário dos 30 Dias para o livro completo ter 104 páginas.")
-    
-    btn_label = "📚 Gerar Livro Completo (104 Págs)" if include_fm else "📚 Gerar Miolo dos 30 Dias (90 Págs)"
-    
-    if st.button(btn_label, use_container_width=True):
-        with st.spinner("Gerando o PDF completo em alta resolução (isto leva alguns segundos)..."):
-            res = generator.render_book(custom_data=data, include_front_matter=include_fm)
-            pdf_path = res["pdf_path"]
-            st.session_state["full_pdf_ready"] = str(pdf_path)
-            st.session_state["full_pdf_pages"] = res['total_pages']
-            st.success(f"PDF KDP pronto! {res['total_pages']} páginas geradas com sucesso.")
-            
-    if "full_pdf_ready" in st.session_state and os.path.exists(st.session_state["full_pdf_ready"]):
-        with open(st.session_state["full_pdf_ready"], "rb") as f:
-            pdf_bytes = f.read()
-        p_count = st.session_state.get("full_pdf_pages", 104)
-        st.download_button(
-            label=f"⬇️ Baixar Livro Completo ({p_count} Páginas - KDP)",
-            data=pdf_bytes,
-            file_name="devocional_30_dias_kdp.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+    col_ep1, col_ep2 = st.columns(2)
+    with col_ep1:
+        if st.button("📱 Gerar EPUB (EN)", use_container_width=True):
+            import epub_generator
+            epub_file = epub_generator.generate_epub("en")
+            st.session_state["epub_en_path"] = str(epub_file)
+            st.success("EPUB (Inglês) pronto!")
+    with col_ep2:
+        if st.button("📱 Gerar EPUB (PT)", use_container_width=True):
+            import epub_generator
+            epub_file = epub_generator.generate_epub("pt")
+            st.session_state["epub_pt_path"] = str(epub_file)
+            st.success("EPUB (Português) pronto!")
+
+    epub_en_path = OUTPUT_DIR / "30_Days_Closer_to_God.epub"
+    if epub_en_path.exists():
+        with open(epub_en_path, "rb") as f:
+            st.download_button(
+                label="⬇️ Baixar EPUB Inglês (Kindle)",
+                data=f.read(),
+                file_name="30_Days_Closer_to_God.epub",
+                mime="application/epub+zip",
+                use_container_width=True
+            )
+
+    epub_pt_path = OUTPUT_DIR / "30_Dias_Mais_Perto_de_Deus.epub"
+    if epub_pt_path.exists():
+        with open(epub_pt_path, "rb") as f:
+            st.download_button(
+                label="⬇️ Baixar EPUB Português (Kindle)",
+                data=f.read(),
+                file_name="30_Dias_Mais_Perto_de_Deus.epub",
+                mime="application/epub+zip",
+                use_container_width=True
+            )
 
     st.markdown("---")
     st.markdown("""
