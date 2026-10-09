@@ -268,7 +268,7 @@ h1, h2, h3, h4 {
 }
 """
 
-def generate_epub(language="en", output_path=None):
+def generate_epub(language="en", output_path=None, run_paths=None):
     """Gera o arquivo EPUB profissional completo para o idioma especificado ('en' ou 'pt')."""
     data_file = DATA_DIR / ("devocional_en.json" if language == "en" else "devocional_pt.json")
     if not data_file.exists():
@@ -525,12 +525,15 @@ def generate_epub(language="en", output_path=None):
     book.spine = spine
 
     # Caminho final
+    filename = "30_Days_Closer_to_God.epub" if language == "en" else "30_Dias_Mais_Perto_de_Deus.epub"
     if output_path:
         out_file = pathlib.Path(output_path).resolve()
+    elif run_paths:
+        out_file = run_paths.ebook_dir / filename
     else:
-        filename = "30_Days_Closer_to_God.epub" if language == "en" else "30_Dias_Mais_Perto_de_Deus.epub"
         out_file = OUTPUT_DIR / filename
         
+    out_file.parent.mkdir(parents=True, exist_ok=True)
     epub.write_epub(str(out_file), book, {})
     print(f"[OK] e-Book EPUB ({language.upper()}) gerado com sucesso em:\n     {out_file}")
     return out_file

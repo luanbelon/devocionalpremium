@@ -1,102 +1,128 @@
-# 📖 Sistema Gerador de Devocional KDP (Amazon) - 30 Dias
+# 📖 Sistema Gerador de Devocional KDP (Amazon)
 
-Sistema completo de alta precisão tipográfica para geração de livros devocionais para o **Amazon Kindle Direct Publishing (KDP)**.
-
-Reprodução fiel do modelo de **3 páginas por dia**, com diagramação profissional, fontes serifadas clássicas, letra capitular, versículo destacado, caixas de reflexão e oração com ícones vetoriais.
-
----
-
-## 🌟 Estrutura de Cada Dia (Exatamente 3 Páginas)
-
-| Página | Conteúdo e Elementos |
-|---|---|
-| **Página 1** (Abertura) | • Cabeçalho corrente (*30 DIAS MAIS PERTO DE DEUS*) com linha sutil<br>• Badge estilizado (*DIA X*) em moldura arredondada<br>• Título principal com tipografia serifada nobre (*Cormorant Garamond*)<br>• Ornamento floral delicado em vetor bronze<br>• Caixa de destaque em tom areia com o **Versículo Chave** e referência<br>• Reflexão inicial com **Letra Capitular** (*Drop Cap*)<br>• Numeração de página centralizada |
-| **Página 2** (Aprofundamento) | • Cabeçalho corrente com linha de divisão<br>• Reflexão teológica e devocional aprofundada em parágrafos justificados<br>• Numeração de página centralizada |
-| **Página 3** (Aplicação & Oração) | • Cabeçalho corrente<br>• Parágrafos de conclusão e aplicação prática cotidiana<br>• **Box 1: "PARA GUARDAR NO CORAÇÃO"** (com ícone de ramo de oliveira)<br>• **Box 2: "ORAÇÃO DE HOJE"** (com ícone de mãos em oração)<br>• Numeração de página centralizada |
+Sistema avançado de diagramação editorial e conformidade de impressão para o **Amazon Kindle Direct Publishing (KDP)**.
+Produz livros impressos (**Paperback** e **Hardcover**), e-Books (**EPUB 3 / Kindle**) e validações técnicas com auditoria de integridade.
 
 ---
 
-## 📂 Estrutura de Pastas do Projeto
+## 🚀 Principais Melhorias Implementadas
 
+1. **Configuração e Validação Oficial KDP por Livro**:
+   - Módulo centralizado de especificações KDP ([kdp_specs.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/kdp_specs.py)) versionado e auditado contra as fontes oficiais da Amazon.
+   - Cálculo automático de margens espelhadas (*recto* vs *verso*) e calha (*gutter*) conforme a faixa real de páginas (24–150, 151–300, 301–500, 501–700, 701–828).
+   - Prevalência do maior valor: `max(mínimo_obrigatório_kdp, preferência_editorial)`.
+   - Limites rígidos de páginas por encadernação: **Brochura (24 a 828 páginas)** e **Capa Dura (75 a 550 páginas)**.
+   - Geometria precisa com e sem sangria (+0.125" largura, +0.25" altura).
+   - Fechamento obrigatório em número par (adição automática de página final em branco).
+   - Regra de abertura de leitura configurável: nova página consecutiva ou sempre página ímpar (*recto*).
+
+2. **Ciclo de Convergência da Paginação**:
+   - Diagrama com a estimativa inicial -> Renderiza o PDF -> Conta páginas físicas reais -> Ajusta paridade -> Consulta a faixa de calha necessária -> Recalcula margens se o patamar mudou -> Atualiza o sumário dinâmico -> Valida e emite manifesto.
+   - Detecção automática de oscilação e limite de tentativas (máx. 5 iterações).
+
+3. **Organização Isolada por Devocional em `output/`**:
+   - Estrutura oficial hierárquica por livro, idioma e execução:
+     ```
+     output/<slug-do-devocional>--<book-id>/<idioma>/<run-id>/
+     ├── content/      # Manuscrito-fonte e snapshot dos dados
+     ├── metadata/     # Metadados editoriais
+     ├── assets/       # Imagens e ornamentos utilizados
+     ├── paperback/    # Miolo (interior.pdf) e Capa (cover.pdf)
+     ├── hardcover/    # Miolo e Capa da edição capa dura
+     ├── ebook/        # Arquivo Kindle/EPUB reflowable
+     ├── reports/      # manifest.json e applied_config.json
+     ├── previews/     # Imagens PNG de conferência
+     ├── logs/         # Registros da execução
+     └── tmp/          # Arquivos intermediários (limpos ao final)
+     ```
+   - Resolução centralizada no [storage_manager.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/storage_manager.py) com sanitização contra *path traversal*.
+   - Livros diferentes com mesmo título não compartilham pastas.
+   - Retomada de execuções existentes via `run_id`.
+   - Preservação de arquivos legados existentes em `output/`.
+
+4. **Manifesto e Auditoria Criptográfica (`manifest.json`)**:
+   - Salvo em `reports/manifest.json` com status (`validated`, `failed`), configurações solicitadas vs efetivamente aplicadas, páginas físicas reais, caminhos relativos e hashes **SHA-256** de todos os artefatos.
+
+5. **Cálculo Desvinculado e Invalidação de Capa**:
+   - Módulo [cover_generator.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/cover_generator.py) com cálculos oficiais de lombada baseados no papel (creme: 0.0025"/pág, branco: 0.002252"/pág).
+   - Capa dura calcula dobra externa (*wrap* 0.59"), articulação (*hinge* 0.394") e espessura de papelão.
+   - Detecção de invalidação: se a paginação ou perfil do miolo mudar, a capa anterior é marcada como obsoleta.
+
+6. **Validador Técnico com PyMuPDF**:
+   - Módulo [pdf_validator.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/pdf_validator.py) inspeciona o PDF exportado: dimensões, páginas individuais (sem spreads), margens seguras de texto, resolução de imagens (mínimo 300 DPI), fontes incorporadas, ausência de senha/criptografia e tamanho de arquivo <= 650 MB.
+   - Lembrete explícito de que a aprovação local é técnica e ainda requer conferência no **KDP Print Previewer**.
+
+---
+
+## 🛠️ Arquitetura dos Módulos
+
+- [kdp_specs.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/kdp_specs.py): Regras oficiais KDP, tabela de calha, conversões e fórmulas.
+- [book_config.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/book_config.py): Dataclass de configuração por devocional e regras de abertura.
+- [storage_manager.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/storage_manager.py): Gestor de armazenamento, isolamento de pastas e sanitização.
+- [pdf_validator.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/pdf_validator.py): Validador exaustivo de PDF com PyMuPDF.
+- [cover_generator.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/cover_generator.py): Gerador e calculador de capa KDP.
+- [manifest_manager.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/manifest_manager.py): Emissor de `manifest.json` com hashes SHA-256.
+- [generator.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/generator.py): Motor do ciclo de convergência e renderizador Chrome/Edge.
+- [epub_generator.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/epub_generator.py): Exportador de e-Books EPUB 3 + NCX para Kindle.
+- [app.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/app.py): Interface Web Streamlit com painel de controle KDP.
+- [tests/test_kdp_system.py](file:///c:/Users/luan.santos/Documents/Robôs/Low%20content/Devocional/tests/test_kdp_system.py): Suíte com 10 testes cobrindo todas as regras KDP.
+
+---
+
+## 💻 Comandos e Como Utilizar
+
+### 1. Interface Web (Streamlit)
+```powershell
+streamlit run app.py
 ```
-Devocional/
-├── data/
-│   └── devocional.json          # Banco de dados com todos os 30 dias estruturados
-├── templates/
-│   ├── book_template.html       # Template dos 30 dias (3 páginas por dia)
-│   └── front_matter.html        # Páginas 1 a 14 (Capa interna, ficha, dedicatória, sumário)
-├── output/
-│   ├── devocional_30_dias_kdp.pdf  # Livro completo gerado em alta resolução
-│   └── devocional_dia_XX.pdf       # PDFs individuais de cada dia
-├── previews/                    # Imagens PNG de alta resolução para inspeção visual
-├── generator.py                 # Motor principal de renderização e validação
-├── app.py                       # Painel Web interativo (Streamlit)
-├── iniciar_sistema.bat          # Inicializador com 1 clique para Windows
-└── README.md                    # Este manual
-```
+Acesse no navegador para:
+- Ajustar encadernação (Paperback ou Hardcover), formato de corte, papel e margens.
+- Clicar em **"📘 Gerar Livro Completo & Validar KDP"** para rodar o ciclo de convergência.
+- Baixar Miolo (`interior.pdf`), Capa (`cover.pdf`), Manifesto (`manifest.json`) e EPUBs.
+- Editar os 30 dias individualmente com preview de 3 páginas.
 
----
+### 2. Linha de Comando (CLI)
 
-## 🚀 Como Usar o Sistema
-
-### Opção 1: Painel Visual Interativo (Recomendado)
-Você pode usar a interface gráfica completa no navegador:
-
-1. Dê um duplo clique no arquivo:
-   ```cmd
-   iniciar_sistema.bat
-   ```
-   *Ou execute no terminal:*
-   ```powershell
-   streamlit run app.py
-   ```
-2. No painel, você pode:
-   - **Visualizar lado a lado** as 3 páginas de qualquer um dos 30 dias em alta resolução.
-   - **Editar em tempo real** títulos, versículos, parágrafos, takeaways e orações.
-   - **Personalizar** o título do livro, autor, tamanho KDP (6"x9" ou 5.5"x8.5") e página inicial.
-   - **Baixar o PDF completo** (104 páginas com páginas pré-textuais ou 90 páginas de miolo) ou o PDF de dias individuais.
-
----
-
-### Opção 2: Linha de Comando (CLI)
-Você também pode gerar e validar diretamente pelo terminal:
-
-- **Gerar livro completo para o KDP (104 páginas com sumário e pré-textuais):**
+- **Gerar livro completo Paperback (Brochura 6" x 9"):**
   ```powershell
-  python generator.py --all --front-matter
+  python generator.py --all --edition paperback --trim 6x9
   ```
 
-- **Gerar apenas o miolo dos 30 dias (90 páginas, a partir da pág. 15):**
+- **Gerar livro completo Hardcover (Capa Dura 6" x 9"):**
   ```powershell
-  python generator.py --all
+  python generator.py --all --edition hardcover --trim 6x9
   ```
 
-- **Gerar o PDF de um dia específico (ex: Dia 1 - 3 páginas):**
+- **Gerar com regra de abertura em página ímpar (*recto*):**
   ```powershell
-  python generator.py --day 1
+  python generator.py --all --opening-rule recto
   ```
 
-- **Exportar imagens PNG de preview para um dia:**
+- **Gerar com sangria (*bleed*):**
   ```powershell
-  python generator.py --preview 1
+  python generator.py --all --bleed
   ```
 
-- **Validar todos os 30 dias (garantir que nenhum texto transborda para uma 4ª página):**
+- **Exportar e-Books EPUB (Inglês e Português):**
   ```powershell
-  python generator.py --validate
+  python epub_generator.py --lang all
+  ```
+
+- **Executar a suíte completa de testes:**
+  ```powershell
+  pytest tests/test_kdp_system.py -v
   ```
 
 ---
 
-## 🖨️ Diretrizes de Publicação no Amazon KDP
+## 📋 Tabela Oficial KDP de Margem Interna (Calha / Gutter)
 
-Ao cadastrar seu livro no Amazon KDP (Kindle Direct Publishing):
+| Total de Páginas Físicas | Margem Interna Mínima (pol) | Margem Interna Mínima (pt) | Margem Interna Mínima (mm) |
+|---|---|---|---|
+| **24 a 150 páginas** | 0.375" | 27.0 pt | 9.5 mm |
+| **151 a 300 páginas** | 0.500" | 36.0 pt | 12.7 mm |
+| **301 a 500 páginas** | 0.625" | 45.0 pt | 15.9 mm |
+| **501 a 700 páginas** | 0.750" | 54.0 pt | 19.1 mm |
+| **701 a 828 páginas** | 0.875" | 63.0 pt | 22.2 mm |
 
-1. **Tamanho do Corte (Trim Size):** Selecione **6 x 9 polegadas (15,24 x 22,86 cm)**.
-2. **Sangria (Bleed):** Selecione **Sem sangria (No Bleed)**. O layout já foi dimensionado com margens de segurança e calha apropriadas.
-3. **Tipo de Papel:**
-   - **Preto e branco com papel creme** (confere um visual clássico e acolhedor).
-   - **Cor padrão** (imprime os tons areia e bronze com suavidade).
-4. **Cálculo da Lombada (Spine Width):**
-   - Com 104 páginas em papel creme (50 lb):
-     `Espessura da lombada = 104 * 0,00225" ≈ 0,234" (5,94 mm)`
+*Margens externas, superior e inferior mínimas: 0.250" sem sangria; 0.375" com sangria.*
