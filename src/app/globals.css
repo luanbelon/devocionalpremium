@@ -353,6 +353,56 @@ details.messages summary {
   border-radius: 50%;
 }
 
+.ornament-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.ornament-thumb {
+  flex: none;
+  width: 130px;
+  height: 84px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ornament-thumb img {
+  height: auto;
+  max-height: 76px;
+}
+
+.ornament-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 12.5px;
+}
+
+.ornament-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ornament-info span {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.ornament-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
 .hint {
   margin: 8px 0 0;
   font-size: 11.5px;

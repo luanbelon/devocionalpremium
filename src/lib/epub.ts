@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { LABELS } from "./i18n";
-import { themeDef } from "./themes";
+import { resolveTheme } from "./themes";
 import type { Book, Palette } from "./types";
 
 const EPUB_CSS = `@charset "utf-8";
@@ -101,17 +101,21 @@ export function epubFileName(book: Book): string {
   return `${book.bookId || "devocional"}.epub`;
 }
 
-export async function buildEpub(book: Book, paletteKey: Palette = "creme"): Promise<Uint8Array> {
+export async function buildEpub(
+  book: Book,
+  opts: { colorPalette: Palette; customOrnamentSvg: string } = { colorPalette: "creme", customOrnamentSvg: "" }
+): Promise<Uint8Array> {
   const lang = book.language === "pt" ? "pt-BR" : "en-US";
   const labels = LABELS[book.language];
   const fm = book.frontMatter;
-  const palette = themeDef("color", paletteKey);
+  const palette = resolveTheme("color", opts);
   const icons = palette.icons;
+  const ramoFile = palette.ornamentSvg ? "ramo.svg" : "ramo.png";
   const chapters: Chapter[] = [];
   const add = (id: string, title: string, body: string, inToc: boolean, bodyType?: string) =>
     chapters.push({ id, file: `text/${id}.xhtml`, title, html: xhtml(lang, title, body, bodyType), inToc });
 
-  const ornament = `<div class="ornament"><img src="../images/ramo.png" alt=""/></div>`;
+  const ornament = `<div class="ornament"><img src="../images/${ramoFile}" alt=""/></div>`;
 
   add(
     "titlepage",
@@ -218,7 +222,7 @@ ${
     : ""
 }
 ${paras}
-${card("ramo.png", d.heart)}
+${card(ramoFile, d.heart)}
 ${card("maos.png", d.prayer)}`,
       true,
       "chapter"
@@ -273,7 +277,7 @@ ${book.subtitle ? `<dc:description>${esc(book.subtitle)}</dc:description>` : ""}
 <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
 <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
 <item id="css" href="styles/style.css" media-type="text/css"/>
-<item id="img-ramo" href="images/ramo.png" media-type="image/png"/>
+<item id="img-ramo" href="images/${ramoFile}" media-type="${palette.ornamentSvg ? "image/svg+xml" : "image/png"}"/>
 <item id="img-maos" href="images/maos.png" media-type="image/png"/>
 ${chapters.map((c) => `<item id="${c.id}" href="${c.file}" media-type="application/xhtml+xml"/>`).join("\n")}
 </manifest>
@@ -295,7 +299,8 @@ ${chapters.map((c) => `<itemref idref="${c.id}"/>`).join("\n")}
   zip.file("OEBPS/nav.xhtml", nav);
   zip.file("OEBPS/toc.ncx", ncx);
   zip.file("OEBPS/styles/style.css", epubCss(palette.vars));
-  zip.file("OEBPS/images/ramo.png", icons.ramo.split(",")[1], { base64: true });
+  if (palette.ornamentSvg) zip.file("OEBPS/images/ramo.svg", palette.ornamentSvg);
+  else zip.file("OEBPS/images/ramo.png", icons.ramo.split(",")[1], { base64: true });
   zip.file("OEBPS/images/maos.png", icons.maos.split(",")[1], { base64: true });
   for (const c of chapters) zip.file(`OEBPS/${c.file}`, c.html);
 

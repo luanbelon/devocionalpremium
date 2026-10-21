@@ -1,4 +1,5 @@
 import { TRIM_SIZES, type EditionType, type PaperType } from "./kdp";
+import { sanitizeSvg } from "./ornament";
 import type { Palette } from "./types";
 
 export const PALETTE_KEYS = ["creme", "verde", "azul", "rosa", "lilas", "amarelo"] as const satisfies readonly Palette[];
@@ -17,6 +18,9 @@ export interface Settings {
   autoFit: boolean;
   targetPagesPerDay: number;
   ornamentPx: number;
+  // SVG enviado pelo usuário para substituir o ramo ("" = ramo padrão).
+  customOrnamentSvg: string;
+  customOrnamentName: string;
   includeFrontMatter: boolean;
   colorInk: "premium_color" | "standard_color";
   colorPalette: Palette;
@@ -39,6 +43,8 @@ export const DEFAULT_SETTINGS: Settings = {
   targetPagesPerDay: 3,
   // 32px do modelo colorido (docs/modelos/dia_28_pag_1.png) + 30%.
   ornamentPx: 42,
+  customOrnamentSvg: "",
+  customOrnamentName: "",
   includeFrontMatter: true,
   colorInk: "premium_color",
   colorPalette: "creme",
@@ -76,7 +82,11 @@ export function sanitizeSettings(input: unknown, base: Settings = DEFAULT_SETTIN
     lineHeight: num(s.lineHeight, base.lineHeight, 1.1, 2.2),
     autoFit: bool(s.autoFit, base.autoFit),
     targetPagesPerDay: Math.round(num(s.targetPagesPerDay, base.targetPagesPerDay, 1, 8)),
-    ornamentPx: num(s.ornamentPx, base.ornamentPx, 8, 80),
+    ornamentPx: num(s.ornamentPx, base.ornamentPx, 8, 160),
+    customOrnamentSvg:
+      s.customOrnamentSvg === undefined ? base.customOrnamentSvg : (sanitizeSvg(s.customOrnamentSvg) ?? ""),
+    customOrnamentName:
+      typeof s.customOrnamentName === "string" ? s.customOrnamentName.slice(0, 120) : base.customOrnamentName,
     includeFrontMatter: bool(s.includeFrontMatter, base.includeFrontMatter),
     colorInk: pick(s.colorInk, ["premium_color", "standard_color"] as const, base.colorInk),
     colorPalette: pick(s.colorPalette ?? s.paleta, PALETTE_KEYS, base.colorPalette),

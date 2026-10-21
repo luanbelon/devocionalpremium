@@ -10,7 +10,8 @@ import { KDP_RULES_VERSION, pageGeometry, TRIM_SIZES } from "@/lib/kdp";
 import { normalizeBookJson, type NormalizeResult } from "@/lib/normalize";
 import { editionSummary, type EditionSummary } from "@/lib/report";
 import { DEFAULT_SETTINGS, sanitizeSettings, type Settings } from "@/lib/settings";
-import { PALETTE_ORDER, PALETTES } from "@/lib/themes";
+import { MAX_SVG_BYTES, sanitizeSvg } from "@/lib/ornament";
+import { PALETTE_ORDER, PALETTES, resolveTheme } from "@/lib/themes";
 import type { Book, BookReport, Theme } from "@/lib/types";
 
 const STORAGE_KEY = "devocional-premium:v3";
@@ -150,6 +151,7 @@ export default function Studio() {
   const [pasteText, setPasteText] = useState("");
   const [dragging, setDragging] = useState(false);
   const [origin, setOrigin] = useState("");
+  const [ornamentError, setOrnamentError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(0);
   const [frameWidth, setFrameWidth] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -285,7 +287,7 @@ export default function Studio() {
   const exportEpub = () =>
     run("epub", async () => {
       if (!book) return;
-      const bytes = await buildEpub(book, settings.colorPalette);
+      const bytes = await buildEpub(book, settings);
       download(new Blob([bytes as BlobPart], { type: "application/epub+zip" }), epubFileName(book));
     });
 
@@ -295,7 +297,7 @@ export default function Studio() {
       const [color, bw, epub] = await Promise.all([
         requestPdf(book, settings, "color"),
         requestPdf(book, settings, "bw"),
-        buildEpub(book, settings.colorPalette),
+        buildEpub(book, settings),
       ]);
       const zip = new JSZip();
       zip.file(`${book.bookId}_interior_colorido-${settings.colorPalette}.pdf`, color);
@@ -332,6 +334,7 @@ export default function Studio() {
   // 32px de respiro do preview + 16px da barra de rolagem do iframe.
   const fitScale = frameWidth ? Math.min(1.5, Math.max(0.3, frameWidth / (pageWidthPx + 48))) : 1;
   const scale = zoom || fitScale;
+  const activeTheme = resolveTheme(theme, settings);
 
   // Ferramenta 100% cliente (localStorage, iframe): evita divergência de hidratação.
   if (!origin) return <div className="studio" />;
@@ -509,7 +512,66 @@ export default function Studio() {
           </section>
 
           <section className="panel">
-            <h2>4. Formato KDP</h2>
+            <h2>4. Ramo (ornamento)</h2>
+            <div className="ornament-row">
+              <div className="ornament-thumb" style={{ background: activeTheme.vars["--card-bg"] }}>
+                <img
+                  src={activeTheme.icons.ramo}
+                  alt="Ramo atual"
+                  style={{ width: Math.min(settings.ornamentPx, 120), aspectRatio: String(activeTheme.ornamentRatio) }}
+                />
+              </div>
+              <div className="ornament-info">
+                <strong>{settings.customOrnamentSvg ? settings.customOrnamentName || "SVG personalizado" : "Ramo padrão"}</strong>
+                <span>Usa a cor da paleta {theme === "color" ? PALETTES[settings.colorPalette].label : "P&B"}</span>
+                <div className="ornament-actions">
+                  <label className="btn small">
+                    Enviar SVG
+                    <input
+                      type="file"
+                      accept=".svg,image/svg+xml"
+                      hidden
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!f) return;
+                        const svg = sanitizeSvg(await f.text());
+                        if (!svg) {
+                          setOrnamentError(`"${f.name}" não é um SVG válido (máx. ${Math.round(MAX_SVG_BYTES / 1000)} KB).`);
+                          return;
+                        }
+                        setOrnamentError(null);
+                        setSettings((s) => sanitizeSettings({ ...s, customOrnamentSvg: svg, customOrnamentName: f.name }));
+                      }}
+                    />
+                  </label>
+                  {settings.customOrnamentSvg && (
+                    <button
+                      className="btn small ghost"
+                      onClick={() => setSettings((s) => ({ ...s, customOrnamentSvg: "", customOrnamentName: "" }))}
+                    >
+                      Usar ramo padrão
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            {ornamentError && <p className="messages error">{ornamentError}</p>}
+            <NumberField
+              label="Largura do ramo sob o título"
+              value={settings.ornamentPx}
+              step={1}
+              suffix="px"
+              onChange={(v) => update("ornamentPx", v)}
+            />
+            <p className="hint">
+              O desenho é pintado com a cor de destaque do tema e aparece sob o título dos dias, na folha de rosto, na
+              divisória e no card “{book ? book.days[0]?.heart.title.toLowerCase() : "para guardar no coração"}”.
+            </p>
+          </section>
+
+          <section className="panel">
+            <h2>5. Formato KDP</h2>
             <div className="grid2">
               <label className="field">
                 <span>Encadernação</span>
@@ -564,11 +626,10 @@ export default function Studio() {
           </section>
 
           <section className="panel">
-            <h2>5. Tipografia</h2>
+            <h2>6. Tipografia</h2>
             <div className="grid2">
               <NumberField label="Corpo do texto" value={settings.fontSizePt} step={0.1} suffix="pt" onChange={(v) => update("fontSizePt", v)} />
               <NumberField label="Entrelinha" value={settings.lineHeight} step={0.02} onChange={(v) => update("lineHeight", v)} />
-              <NumberField label="Ramo sob o título" value={settings.ornamentPx} step={0.1} suffix="px" onChange={(v) => update("ornamentPx", v)} />
               <NumberField label="Meta de páginas/dia" value={settings.targetPagesPerDay} step={1} onChange={(v) => update("targetPagesPerDay", v)} />
             </div>
             <label className="check">
@@ -590,7 +651,7 @@ export default function Studio() {
 
           {report && book && (
             <section className="panel">
-              <h2>6. Resultado</h2>
+              <h2>7. Resultado</h2>
               <div className="stats">
                 <div>
                   <b>{report.totalPages}</b>

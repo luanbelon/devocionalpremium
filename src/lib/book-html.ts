@@ -2,7 +2,7 @@ import { GUTTER_TIERS, MIN_OUTSIDE_MARGIN, pageGeometry } from "./kdp";
 import { LABELS } from "./i18n";
 import { PAGINATOR_JS } from "./paginator";
 import type { Settings } from "./settings";
-import { themeDef } from "./themes";
+import { resolveTheme } from "./themes";
 import type { Book, Theme } from "./types";
 
 export interface BuildHtmlOptions {
@@ -105,7 +105,7 @@ body {
   letter-spacing: -0.01em;
 }
 .ornament { text-align: center; margin-bottom: 16px; line-height: 0; }
-.ornament img { width: var(--ornament); height: auto; aspect-ratio: 512 / 300; display: inline-block; }
+.ornament img { width: var(--ornament); height: auto; aspect-ratio: var(--ornament-ratio); display: inline-block; }
 
 .scripture {
   background: var(--card-bg);
@@ -220,7 +220,7 @@ body {
   max-width: 88%;
 }
 .fm-ornament { margin: 30px 0 40px; line-height: 0; }
-.fm-ornament img { width: var(--ornament); height: auto; aspect-ratio: 512 / 300; }
+.fm-ornament img { width: var(--ornament); height: auto; aspect-ratio: var(--ornament-ratio); }
 .fm-author {
   font-family: 'Cinzel', serif;
   font-size: 11pt;
@@ -290,7 +290,7 @@ body {
 .toc-page { font-family: 'EB Garamond', serif; font-size: 10.2pt; font-weight: 600; color: var(--ink-strong); flex: none; }
 
 .fm-divider-ornament { line-height: 0; }
-.fm-divider-ornament img { width: calc(var(--ornament) * 1.4); height: auto; aspect-ratio: 512 / 300; }
+.fm-divider-ornament img { width: calc(var(--ornament) * 1.4); height: auto; aspect-ratio: var(--ornament-ratio); }
 .fm-divider-label {
   font-family: 'Cinzel', serif;
   font-size: 13pt;
@@ -323,7 +323,7 @@ const escapeHtml = (s: string) =>
 
 export function buildBookHtml(book: Book, settings: Settings, opts: BuildHtmlOptions): string {
   const geo = pageGeometry(settings.trimSize, settings.editionType, settings.bleed);
-  const theme = themeDef(opts.theme, settings.colorPalette);
+  const theme = resolveTheme(opts.theme, settings);
   const labels = LABELS[book.language];
 
   const rootVars = {
@@ -331,6 +331,7 @@ export function buildBookHtml(book: Book, settings: Settings, opts: BuildHtmlOpt
     "--page-w": `${geo.pageWidth}in`,
     "--page-h": `${geo.pageHeight}in`,
     "--ornament": `${settings.ornamentPx}px`,
+    "--ornament-ratio": String(theme.ornamentRatio),
   };
   const varsCss = `:root{${Object.entries(rootVars)
     .map(([k, v]) => `${k}:${v};`)
@@ -338,7 +339,8 @@ export function buildBookHtml(book: Book, settings: Settings, opts: BuildHtmlOpt
 
   const data = {
     book,
-    settings,
+    // O SVG já vai recolorido em `icons`.
+    settings: { ...settings, customOrnamentSvg: "" },
     labels,
     geometry: geo,
     icons: theme.icons,

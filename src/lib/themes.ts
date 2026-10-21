@@ -1,4 +1,5 @@
 import { ICONS } from "@/generated/assets";
+import { recolorSvg, svgAspect, svgDataUri } from "./ornament";
 import type { Palette, Theme } from "./types";
 
 export interface ThemeDef {
@@ -166,4 +167,28 @@ const BW: ThemeDef = {
 
 export function themeDef(theme: Theme, paletteKey: Palette): ThemeDef {
   return theme === "bw" ? BW : (PALETTES[paletteKey] ?? PALETTES.creme);
+}
+
+// Proporção do ramo padrão (assets/icons/ramo_*.png).
+const DEFAULT_ORNAMENT_RATIO = 256 / 150;
+
+export interface ResolvedTheme extends ThemeDef {
+  ornamentRatio: number;
+  // SVG do ornamento personalizado já recolorido, ou null para o ramo padrão.
+  ornamentSvg: string | null;
+}
+
+export function resolveTheme(
+  theme: Theme,
+  opts: { colorPalette: Palette; customOrnamentSvg: string }
+): ResolvedTheme {
+  const base = themeDef(theme, opts.colorPalette);
+  if (!opts.customOrnamentSvg) return { ...base, ornamentRatio: DEFAULT_ORNAMENT_RATIO, ornamentSvg: null };
+  const svg = recolorSvg(opts.customOrnamentSvg, base.vars["--accent"]);
+  return {
+    ...base,
+    icons: { ...base.icons, ramo: svgDataUri(svg) },
+    ornamentRatio: svgAspect(svg),
+    ornamentSvg: svg,
+  };
 }

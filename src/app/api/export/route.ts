@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   try {
     const color = await renderPdf(browser, book, settings, "color");
     const bw = await renderPdf(browser, book, settings, "bw");
-    const epub = await buildEpub(book, settings.colorPalette);
+    const epub = await buildEpub(book, settings);
     const slug = book.bookId;
 
     const relatorio = {
