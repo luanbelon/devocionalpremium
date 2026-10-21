@@ -12,8 +12,8 @@ import { editionSummary, type EditionSummary } from "@/lib/report";
 import { DEFAULT_SETTINGS, sanitizeSettings, type Settings } from "@/lib/settings";
 import type { Book, BookReport, Theme } from "@/lib/types";
 
-const STORAGE_KEY = "devocional-premium:v2";
-const LEGACY_STORAGE_KEY = "devocional-premium:v1";
+const STORAGE_KEY = "devocional-premium:v3";
+const LEGACY_STORAGE_KEYS = ["devocional-premium:v2", "devocional-premium:v1"];
 const ZOOMS = [
   { value: 0, label: "Ajustar à largura" },
   { value: 0.5, label: "50%" },
@@ -167,9 +167,11 @@ export default function Studio() {
     setOrigin(window.location.origin);
     try {
       const current = localStorage.getItem(STORAGE_KEY);
-      const saved = JSON.parse(current ?? localStorage.getItem(LEGACY_STORAGE_KEY) ?? "null");
-      // Na v1 o ramo padrão era 18.2px; descarta para assumir o padrão atual.
+      const legacy = LEGACY_STORAGE_KEYS.map((k) => localStorage.getItem(k)).find(Boolean);
+      const saved = JSON.parse(current ?? legacy ?? "null");
+      // Versões anteriores gravaram o ramo em 18.2px; assume o padrão atual.
       if (saved && !current && saved.settings) delete saved.settings.ornamentPx;
+      LEGACY_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
       if (saved) {
         setRawText(saved.rawText ?? "");
         setSourceName(saved.sourceName ?? "");
