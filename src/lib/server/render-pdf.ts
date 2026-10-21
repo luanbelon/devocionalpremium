@@ -2,12 +2,11 @@ import { PDFDocument } from "pdf-lib";
 import type { Browser } from "puppeteer-core";
 import { FONT_DATA } from "@/generated/fonts-data";
 import { buildBookHtml } from "../book-html";
-import { fontFaceCss } from "../fonts";
 import { pageGeometry } from "../kdp";
 import type { Settings } from "../settings";
 import type { Book, BookReport, Theme } from "../types";
 
-const embeddedFontCss = fontFaceCss((file) => `data:font/woff2;base64,${FONT_DATA[file]}`);
+const embeddedFont = (file: string) => `data:font/woff2;base64,${FONT_DATA[file]}`;
 
 export interface RenderedPdf {
   pdf: Uint8Array;
@@ -16,7 +15,7 @@ export interface RenderedPdf {
 
 export async function renderPdf(browser: Browser, book: Book, settings: Settings, theme: Theme): Promise<RenderedPdf> {
   const geo = pageGeometry(settings.trimSize, settings.editionType, settings.bleed);
-  const html = buildBookHtml(book, settings, { theme, mode: "print", fontCss: embeddedFontCss });
+  const html = buildBookHtml(book, settings, { theme, mode: "print", fontSrc: embeddedFont });
   const page = await browser.newPage();
 
   try {

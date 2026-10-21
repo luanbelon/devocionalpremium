@@ -353,6 +353,26 @@ details.messages summary {
   border-radius: 50%;
 }
 
+.font-field {
+  margin-bottom: 12px;
+}
+
+.font-sample {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--text);
+  text-align: center;
+  line-height: 1.25;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
 .margin-check {
   display: flex;
   flex-direction: column;

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SAMPLE_FILES } from "@/generated/assets";
 import { buildBookHtml } from "@/lib/book-html";
 import { buildEpub, epubFileName } from "@/lib/epub";
-import { fontFaceCss } from "@/lib/fonts";
+import { DEFAULT_TITLE_FONT, findTitleFont, fontFaceCss, TITLE_FONTS } from "@/lib/fonts";
 import { KDP_RULES_VERSION, pageGeometry, TRIM_SIZES } from "@/lib/kdp";
 import { normalizeBookJson, type NormalizeResult } from "@/lib/normalize";
 import { editionSummary, type EditionSummary } from "@/lib/report";
@@ -104,6 +104,55 @@ function NumberField(props: {
         {props.suffix && <em>{props.suffix}</em>}
       </div>
     </label>
+  );
+}
+
+const FONT_GROUPS = Array.from(new Set(TITLE_FONTS.map((f) => f.group)));
+const APP_TITLE_FONTS_CSS = fontFaceCss(
+  (f) => `/fonts/${f}`,
+  TITLE_FONTS.map((f) => f.family)
+);
+
+function FontSelect(props: {
+  label: string;
+  value: string;
+  defaultLabel: string;
+  defaultFamily: string;
+  sample: string;
+  uppercase?: boolean;
+  onChange: (key: string) => void;
+}) {
+  const font = findTitleFont(props.value);
+  const family = font?.family ?? props.defaultFamily;
+  const caps = props.uppercase && (font ? font.caps : true);
+  return (
+    <div className="field font-field">
+      <span>{props.label}</span>
+      <select value={props.value} onChange={(e) => props.onChange(e.target.value)}>
+        <option value={DEFAULT_TITLE_FONT}>{props.defaultLabel}</option>
+        {FONT_GROUPS.map((g) => (
+          <optgroup key={g} label={g}>
+            {TITLE_FONTS.filter((f) => f.group === g).map((f) => (
+              <option key={f.key} value={f.key} style={{ fontFamily: `'${f.family}'` }}>
+                {f.family}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+      <div
+        className="font-sample"
+        style={{
+          fontFamily: `'${family}', Georgia, serif`,
+          fontWeight: font?.weight ?? 600,
+          fontSize: `${20 * (font?.scale ?? 1)}px`,
+          textTransform: caps ? "uppercase" : "none",
+          letterSpacing: caps && props.uppercase ? "0.12em" : "normal",
+        }}
+      >
+        {props.sample}
+      </div>
+    </div>
   );
 }
 
@@ -227,7 +276,7 @@ export default function Studio() {
     setSettings((s) => sanitizeSettings({ ...s, [key]: value }));
 
   // Preview: o mesmo HTML e paginador usados no PDF, renderizados num iframe.
-  const fontCss = useMemo(() => (origin ? fontFaceCss((f) => `${origin}/fonts/${f}`) : ""), [origin]);
+  const fontSrc = useCallback((f: string) => `${origin}/fonts/${f}`, [origin]);
   const [debounced, setDebounced] = useState({ book, settings, theme });
   useEffect(() => {
     const t = setTimeout(() => setDebounced({ book, settings, theme }), 350);
@@ -236,10 +285,10 @@ export default function Studio() {
 
   const previewHtml = useMemo(
     () =>
-      debounced.book && fontCss
-        ? buildBookHtml(debounced.book, debounced.settings, { theme: debounced.theme, mode: "preview", fontCss })
+      debounced.book && origin
+        ? buildBookHtml(debounced.book, debounced.settings, { theme: debounced.theme, mode: "preview", fontSrc })
         : "",
-    [debounced, fontCss]
+    [debounced, origin, fontSrc]
   );
 
   useEffect(() => {
@@ -341,6 +390,7 @@ export default function Studio() {
 
   return (
     <div className="studio">
+      <style>{APP_TITLE_FONTS_CSS}</style>
       <aside className="sidebar">
           <header className="brand">
             <span className="brand-mark" aria-hidden>
@@ -633,6 +683,23 @@ export default function Studio() {
 
           <section className="panel">
             <h2>6. Tipografia</h2>
+            <FontSelect
+              label="Títulos dos dias"
+              value={settings.dayTitleFont}
+              defaultLabel="Padrão (Cormorant Garamond)"
+              defaultFamily="Cormorant Garamond"
+              sample={book?.days[0]?.title ?? "Construindo sobre a rocha"}
+              onChange={(v) => update("dayTitleFont", v)}
+            />
+            <FontSelect
+              label="Títulos das pré-textuais (rosto, introdução, sumário…)"
+              value={settings.fmTitleFont}
+              defaultLabel="Padrão (Cinzel + Cormorant Garamond)"
+              defaultFamily="Cinzel"
+              sample={book?.language === "pt" ? "Sumário" : "Contents"}
+              uppercase
+              onChange={(v) => update("fmTitleFont", v)}
+            />
             <div className="grid2">
               <NumberField label="Corpo do texto" value={settings.fontSizePt} step={0.1} suffix="pt" onChange={(v) => update("fontSizePt", v)} />
               <NumberField label="Entrelinha" value={settings.lineHeight} step={0.02} onChange={(v) => update("lineHeight", v)} />

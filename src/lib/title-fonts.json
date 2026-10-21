@@ -1,0 +1,21 @@
+[
+  { "key": "cormorant", "family": "Cormorant Garamond", "pkg": "cormorant-garamond", "weight": 600, "group": "Serifadas clássicas", "caps": true, "scale": 1 },
+  { "key": "playfair", "family": "Playfair Display", "pkg": "playfair-display", "weight": 600, "group": "Serifadas clássicas", "caps": true, "scale": 0.92 },
+  { "key": "lora", "family": "Lora", "pkg": "lora", "weight": 600, "group": "Serifadas clássicas", "caps": true, "scale": 0.9 },
+  { "key": "libre-baskerville", "family": "Libre Baskerville", "pkg": "libre-baskerville", "weight": 400, "group": "Serifadas clássicas", "caps": true, "scale": 0.84 },
+  { "key": "crimson", "family": "Crimson Pro", "pkg": "crimson-pro", "weight": 600, "group": "Serifadas clássicas", "caps": true, "scale": 1 },
+  { "key": "eb-garamond", "family": "EB Garamond", "pkg": "eb-garamond", "weight": 600, "group": "Serifadas clássicas", "caps": true, "scale": 0.96 },
+  { "key": "bodoni", "family": "Bodoni Moda", "pkg": "bodoni-moda", "weight": 500, "group": "Serifadas clássicas", "caps": true, "scale": 0.9 },
+  { "key": "cinzel", "family": "Cinzel", "pkg": "cinzel", "weight": 500, "group": "Capitulares romanas", "caps": true, "scale": 0.82 },
+  { "key": "cinzel-decorative", "family": "Cinzel Decorative", "pkg": "cinzel-decorative", "weight": 400, "group": "Capitulares romanas", "caps": true, "scale": 0.8 },
+  { "key": "marcellus", "family": "Marcellus", "pkg": "marcellus", "weight": 400, "group": "Capitulares romanas", "caps": true, "scale": 0.88 },
+  { "key": "prata", "family": "Prata", "pkg": "prata", "weight": 400, "group": "Elegantes de exibição", "caps": true, "scale": 0.86 },
+  { "key": "gilda", "family": "Gilda Display", "pkg": "gilda-display", "weight": 400, "group": "Elegantes de exibição", "caps": true, "scale": 0.92 },
+  { "key": "dm-serif", "family": "DM Serif Display", "pkg": "dm-serif-display", "weight": 400, "group": "Elegantes de exibição", "caps": true, "scale": 0.9 },
+  { "key": "great-vibes", "family": "Great Vibes", "pkg": "great-vibes", "weight": 400, "group": "Manuscritas", "caps": false, "scale": 1.35 },
+  { "key": "parisienne", "family": "Parisienne", "pkg": "parisienne", "weight": 400, "group": "Manuscritas", "caps": false, "scale": 1.15 },
+  { "key": "allura", "family": "Allura", "pkg": "allura", "weight": 400, "group": "Manuscritas", "caps": false, "scale": 1.4 },
+  { "key": "dancing-script", "family": "Dancing Script", "pkg": "dancing-script", "weight": 600, "group": "Manuscritas", "caps": false, "scale": 1.1 },
+  { "key": "josefin", "family": "Josefin Sans", "pkg": "josefin-sans", "weight": 400, "group": "Sem serifa", "caps": true, "scale": 0.86 },
+  { "key": "montserrat", "family": "Montserrat", "pkg": "montserrat", "weight": 500, "group": "Sem serifa", "caps": true, "scale": 0.8 }
+]

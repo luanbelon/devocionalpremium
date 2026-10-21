@@ -36,6 +36,14 @@ fs.mkdirSync(fontsOut, { recursive: true });
 fs.mkdirSync(samplesOut, { recursive: true });
 fs.mkdirSync(genOut, { recursive: true });
 
+// Fontes opcionais para títulos (src/lib/title-fonts.json).
+const titleFonts = JSON.parse(fs.readFileSync(path.join(root, "src", "lib", "title-fonts.json"), "utf8"));
+for (const f of titleFonts) {
+  const entry = FONTS.find(([pkg]) => pkg === f.pkg);
+  if (!entry) FONTS.push([f.pkg, f.family, [[f.weight, "normal"]]]);
+  else if (!entry[2].some(([w, s]) => w === f.weight && s === "normal")) entry[2].push([f.weight, "normal"]);
+}
+
 const faces = [];
 const fontData = {};
 for (const [pkg, family, variants] of FONTS) {

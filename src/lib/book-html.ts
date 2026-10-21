@@ -1,3 +1,4 @@
+import { findTitleFont, fontFaceCss, type FontSrc } from "./fonts";
 import { GUTTER_TIERS, MIN_OUTSIDE_MARGIN, pageGeometry } from "./kdp";
 import { LABELS } from "./i18n";
 import { PAGINATOR_JS } from "./paginator";
@@ -8,7 +9,8 @@ import type { Book, Theme } from "./types";
 export interface BuildHtmlOptions {
   theme: Theme;
   mode: "print" | "preview";
-  fontCss: string;
+  // URL de cada arquivo .woff2 (data URI no servidor, /fonts no navegador).
+  fontSrc: FontSrc;
 }
 
 const BOOK_CSS = `
@@ -97,9 +99,9 @@ body {
 }
 .day-title {
   text-align: center;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 25pt;
-  font-weight: 600;
+  font-family: var(--day-title-font, 'Cormorant Garamond'), Georgia, serif;
+  font-size: calc(25pt * var(--day-title-scale, 1));
+  font-weight: var(--day-title-weight, 600);
   line-height: 1.15;
   color: var(--ink-strong);
   margin-bottom: 11px;
@@ -303,6 +305,24 @@ body {
 }
 .fm-divider-title { font-family: 'EB Garamond', serif; font-style: italic; font-size: 11pt; color: var(--header-text); margin-top: 8px; }
 
+/* Fonte escolhida para os títulos das pré-textuais. Os tamanhos-base são
+   os equivalentes em Cormorant (a escala do catálogo corrige cada fonte). */
+html.fm-custom .fm-half-title, html.fm-custom .fm-title, html.fm-custom .fm-heading,
+html.fm-custom .toc-heading, html.fm-custom .fm-divider-label {
+  font-family: var(--fm-font), Georgia, serif;
+  font-weight: var(--fm-weight);
+}
+html.fm-custom .fm-half-title { font-size: calc(19.5pt * var(--fm-scale)); }
+html.fm-custom .fm-title { font-size: calc(28pt * var(--fm-scale)); }
+html.fm-custom .fm-heading, html.fm-custom .toc-heading { font-size: calc(18.3pt * var(--fm-scale)); }
+html.fm-custom .fm-divider-label { font-size: calc(15.9pt * var(--fm-scale)); }
+html.fm-nocaps .fm-half-title, html.fm-nocaps .fm-title, html.fm-nocaps .fm-heading,
+html.fm-nocaps .toc-heading, html.fm-nocaps .fm-divider-label {
+  text-transform: none;
+  letter-spacing: normal;
+  padding-left: 0;
+}
+
 /* Preview no navegador */
 html.mode-preview, html.mode-preview body { background: #E7E1D8; }
 html.mode-preview body { padding: 24px 16px 48px; }
@@ -327,13 +347,35 @@ export function buildBookHtml(book: Book, settings: Settings, opts: BuildHtmlOpt
   const theme = resolveTheme(opts.theme, settings);
   const labels = LABELS[book.language];
 
-  const rootVars = {
+  const dayFont = findTitleFont(settings.dayTitleFont);
+  const fmFont = findTitleFont(settings.fmTitleFont);
+  const rootVars: Record<string, string> = {
     ...theme.vars,
     "--page-w": `${geo.pageWidth}in`,
     "--page-h": `${geo.pageHeight}in`,
     "--ornament": `${settings.ornamentPx}px`,
     "--ornament-ratio": String(theme.ornamentRatio),
   };
+  if (dayFont) {
+    rootVars["--day-title-font"] = `'${dayFont.family}'`;
+    rootVars["--day-title-weight"] = String(dayFont.weight);
+    rootVars["--day-title-scale"] = String(dayFont.scale);
+  }
+  if (fmFont) {
+    rootVars["--fm-font"] = `'${fmFont.family}'`;
+    rootVars["--fm-weight"] = String(fmFont.weight);
+    rootVars["--fm-scale"] = String(fmFont.scale);
+  }
+  const htmlClasses = [
+    `mode-${opts.mode}`,
+    `theme-${opts.theme}`,
+    fmFont ? "fm-custom" : "",
+    fmFont && !fmFont.caps ? "fm-nocaps" : "",
+  ].filter(Boolean);
+  const fontCss = fontFaceCss(
+    opts.fontSrc,
+    [dayFont?.family, fmFont?.family].filter((f): f is string => !!f)
+  );
   const varsCss = `:root{${Object.entries(rootVars)
     .map(([k, v]) => `${k}:${v};`)
     .join("")}}`;
@@ -351,11 +393,11 @@ export function buildBookHtml(book: Book, settings: Settings, opts: BuildHtmlOpt
 
   const htmlLang = book.language === "pt" ? "pt-BR" : "en-US";
   return `<!DOCTYPE html>
-<html lang="${htmlLang}" class="mode-${opts.mode} theme-${opts.theme}">
+<html lang="${htmlLang}" class="${htmlClasses.join(" ")}">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(book.title)}</title>
-<style>${opts.fontCss}</style>
+<style>${fontCss}</style>
 <style>@page { size: ${geo.pageWidth}in ${geo.pageHeight}in; margin: 0; }
 ${varsCss}
 ${BOOK_CSS}</style>

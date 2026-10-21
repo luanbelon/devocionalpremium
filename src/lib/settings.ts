@@ -1,5 +1,8 @@
 import { TRIM_SIZES, type EditionType, type PaperType } from "./kdp";
 import { sanitizeSvg } from "./ornament";
+import TITLE_FONT_LIST from "./title-fonts.json";
+
+const TITLE_FONT_KEYS = ["default", ...TITLE_FONT_LIST.map((f) => f.key)];
 import type { Palette } from "./types";
 
 export const PALETTE_KEYS = ["creme", "verde", "azul", "rosa", "lilas", "amarelo"] as const satisfies readonly Palette[];
@@ -18,6 +21,9 @@ export interface Settings {
   autoFit: boolean;
   targetPagesPerDay: number;
   ornamentPx: number;
+  // Chave de src/lib/title-fonts.json ou "default" (fontes originais).
+  dayTitleFont: string;
+  fmTitleFont: string;
   // SVG enviado pelo usuário para substituir o ramo ("" = ramo padrão).
   customOrnamentSvg: string;
   customOrnamentName: string;
@@ -43,6 +49,8 @@ export const DEFAULT_SETTINGS: Settings = {
   targetPagesPerDay: 3,
   // 32px do modelo colorido (docs/modelos/dia_28_pag_1.png) + 30%.
   ornamentPx: 42,
+  dayTitleFont: "default",
+  fmTitleFont: "default",
   customOrnamentSvg: "",
   customOrnamentName: "",
   includeFrontMatter: true,
@@ -83,6 +91,8 @@ export function sanitizeSettings(input: unknown, base: Settings = DEFAULT_SETTIN
     autoFit: bool(s.autoFit, base.autoFit),
     targetPagesPerDay: Math.round(num(s.targetPagesPerDay, base.targetPagesPerDay, 1, 8)),
     ornamentPx: num(s.ornamentPx, base.ornamentPx, 8, 160),
+    dayTitleFont: pick(s.dayTitleFont, TITLE_FONT_KEYS, base.dayTitleFont),
+    fmTitleFont: pick(s.fmTitleFont, TITLE_FONT_KEYS, base.fmTitleFont),
     customOrnamentSvg:
       s.customOrnamentSvg === undefined ? base.customOrnamentSvg : (sanitizeSvg(s.customOrnamentSvg) ?? ""),
     customOrnamentName:
