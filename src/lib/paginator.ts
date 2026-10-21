@@ -115,21 +115,17 @@ export const PAGINATOR_JS = String.raw`
 
   // Maior prefixo (em palavras) que cabe no corpo da página, opcionalmente
   // limitado a maxLines linhas.
-  function maxFitBy(body, n, build, maxLines, lh, textOf) {
-    var lo = 1, hi = n - 1, best = 0;
+  function maxFit(body, words, o, maxLines, lh) {
+    var lo = 1, hi = words.length - 1, best = 0;
     while (lo <= hi) {
       var mid = (lo + hi) >> 1;
-      var part = build(mid);
+      var part = makePara(words.slice(0, mid), o);
       body.appendChild(part);
-      var ok = !overflows(body) && (!maxLines || linesOf(textOf(part), lh) <= maxLines);
+      var ok = !overflows(body) && (!maxLines || linesOf(part, lh) <= maxLines);
       body.removeChild(part);
       if (ok) { best = mid; lo = mid + 1; } else { hi = mid - 1; }
     }
     return best;
-  }
-
-  function maxFit(body, words, o, maxLines, lh) {
-    return maxFitBy(body, words.length, function (k) { return makePara(words.slice(0, k), o); }, maxLines, lh, function (e) { return e; });
   }
 
   function placeText(cur, text, opt, nextPage) {
@@ -296,17 +292,14 @@ export const PAGINATOR_JS = String.raw`
     });
   }
 
-  // o: { cont, split, flow }. Continuações (cont) não repetem ícone nem título.
-  function makeCard(c, words, o) {
-    var card = el('div', 'card card-' + c[0] + (o.flow ? ' flow' : '') + (o.cont ? ' cont' : ''));
-    if (!o.cont) {
-      var ic = el('div', 'card-icon');
-      ic.appendChild(img(c[1]));
-      card.appendChild(ic);
-    }
+  function makeCard(c, flow) {
+    var card = el('div', 'card card-' + c[0] + (flow ? ' flow' : ''));
+    var ic = el('div', 'card-icon');
+    ic.appendChild(img(c[1]));
+    card.appendChild(ic);
     var tx = el('div', 'card-body');
-    if (!o.cont) tx.appendChild(el('div', 'card-title', c[2].title));
-    tx.appendChild(el('div', 'card-text' + (o.split ? ' split' : ''), words.join(' ')));
+    tx.appendChild(el('div', 'card-title', c[2].title));
+    tx.appendChild(el('div', 'card-text', c[2].text));
     card.appendChild(tx);
     return card;
   }
@@ -315,50 +308,8 @@ export const PAGINATOR_JS = String.raw`
     var list = dayCards(day);
     if (!list.length) return null;
     var w = el('div', 'cards');
-    list.forEach(function (c) { w.appendChild(makeCard(c, c[2].text.split(/\s+/), {})); });
+    list.forEach(function (c) { w.appendChild(makeCard(c, false)); });
     return w;
-  }
-
-  // Card em fluxo contínuo: entra logo após o conteúdo anterior e, se não
-  // couber, quebra o texto com as mesmas regras de viúvas e órfãs.
-  function placeCard(cur, c, nextPage) {
-    var words = c[2].text.split(/\s+/).filter(Boolean);
-    var cont = false;
-    var guard = 0;
-    var textOf = function (e) { return e.querySelector('.card-text'); };
-    while (words.length && guard++ < 50) {
-      var full = makeCard(c, words, { flow: true, cont: cont });
-      cur.body.appendChild(full);
-      if (!overflows(cur.body)) return cur;
-      var lh = lineHeightOf(textOf(full));
-      var fullLines = linesOf(textOf(full), lh);
-      cur.body.removeChild(full);
-
-      var o = { flow: true, cont: cont, split: true };
-      var build = function (k) { return makeCard(c, words.slice(0, k), o); };
-      var k = 0;
-      if (fullLines >= MIN_LINES * 2) {
-        k = maxFitBy(cur.body, words.length, build, 0, lh, textOf);
-        if (k > 0) {
-          var probe = build(k);
-          cur.body.appendChild(probe);
-          var l1 = linesOf(textOf(probe), lh);
-          cur.body.removeChild(probe);
-          if (l1 < MIN_LINES) k = 0;
-          else if (fullLines - l1 < MIN_LINES) k = maxFitBy(cur.body, words.length, build, fullLines - MIN_LINES, lh, textOf);
-        }
-      }
-      if (k > 0) {
-        cur.body.appendChild(build(k));
-        words = words.slice(k);
-        cont = true;
-      } else if (!cur.body.children.length) {
-        cur.body.appendChild(full);
-        return cur;
-      }
-      cur = nextPage();
-    }
-    return cur;
   }
 
   function renderDay(day) {
@@ -375,8 +326,8 @@ export const PAGINATOR_JS = String.raw`
       cur = placeText(cur, t, { dropcap: i === 0 }, open);
     });
 
-    // Cards inteiros cabem: ficam no pé da última página. Senão seguem o
-    // fluxo do texto, para nunca deixar espaço vazio no pé de uma página.
+    // Cards inteiros cabem: ficam no pé da última página. Senão cada card
+    // segue o texto e, se não couber inteiro, vai para a página seguinte.
     var cardsStartNewPage = false;
     var block = cardsBlock(day);
     if (block) {
@@ -384,7 +335,7 @@ export const PAGINATOR_JS = String.raw`
       if (overflows(cur.body)) {
         cur.body.removeChild(block);
         var before = cur.n;
-        dayCards(day).forEach(function (c) { cur = placeCard(cur, c, open); });
+        dayCards(day).forEach(function (c) { cur = placeBlock(cur, makeCard(c, true), open); });
         var firstCard = root.querySelector('.page[data-page="' + before + '"] .card');
         cardsStartNewPage = !firstCard;
       }

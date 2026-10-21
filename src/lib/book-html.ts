@@ -160,7 +160,6 @@ body {
 .card.flow { margin-top: 14px; }
 .para + .card.flow { margin-top: 0.95em; }
 .page-body > .card.flow:first-child { margin-top: 0; }
-.card-text.split { text-align-last: justify; }
 .card {
   background: var(--card-bg);
   border: 0.5pt solid var(--card-border);
