@@ -6,13 +6,21 @@ import { SAMPLE_FILES } from "@/generated/assets";
 import { buildBookHtml } from "@/lib/book-html";
 import { buildEpub, epubFileName } from "@/lib/epub";
 import { fontFaceCss } from "@/lib/fonts";
-import { KDP_RULES_VERSION, TRIM_SIZES } from "@/lib/kdp";
+import { KDP_RULES_VERSION, pageGeometry, TRIM_SIZES } from "@/lib/kdp";
 import { normalizeBookJson, type NormalizeResult } from "@/lib/normalize";
 import { editionSummary, type EditionSummary } from "@/lib/report";
 import { DEFAULT_SETTINGS, sanitizeSettings, type Settings } from "@/lib/settings";
 import type { Book, BookReport, Theme } from "@/lib/types";
 
-const STORAGE_KEY = "devocional-premium:v1";
+const STORAGE_KEY = "devocional-premium:v2";
+const LEGACY_STORAGE_KEY = "devocional-premium:v1";
+const ZOOMS = [
+  { value: 0, label: "Ajustar à largura" },
+  { value: 0.5, label: "50%" },
+  { value: 0.75, label: "75%" },
+  { value: 1, label: "100%" },
+  { value: 1.25, label: "125%" },
+];
 
 type ExportKey = "color" | "bw" | "epub" | "zip";
 type Overrides = Partial<Record<"title" | "subtitle" | "author", string>>;
@@ -141,13 +149,27 @@ export default function Studio() {
   const [pasteText, setPasteText] = useState("");
   const [dragging, setDragging] = useState(false);
   const [origin, setOrigin] = useState("");
+  const [zoom, setZoom] = useState(0);
+  const [frameWidth, setFrameWidth] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const frameWrapRef = useRef<HTMLDivElement>(null);
   const restored = useRef(false);
+
+  useEffect(() => {
+    const el = frameWrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setFrameWidth(entry.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [origin]);
 
   useEffect(() => {
     setOrigin(window.location.origin);
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
+      const current = localStorage.getItem(STORAGE_KEY);
+      const saved = JSON.parse(current ?? localStorage.getItem(LEGACY_STORAGE_KEY) ?? "null");
+      // Na v1 o ramo padrão era 18.2px; descarta para assumir o padrão atual.
+      if (saved && !current && saved.settings) delete saved.settings.ornamentPx;
       if (saved) {
         setRawText(saved.rawText ?? "");
         setSourceName(saved.sourceName ?? "");
@@ -303,46 +325,53 @@ export default function Studio() {
   const fitAdjusted =
     report && (report.fontSizePt !== settings.fontSizePt || report.lineHeight !== settings.lineHeight);
   const trims = TRIM_SIZES[settings.editionType];
+  const pageWidthPx = pageGeometry(settings.trimSize, settings.editionType, settings.bleed).pageWidth * 96;
+  // 32px de respiro do preview + 16px da barra de rolagem do iframe.
+  const fitScale = frameWidth ? Math.min(1.5, Math.max(0.3, frameWidth / (pageWidthPx + 48))) : 1;
+  const scale = zoom || fitScale;
+
+  // Ferramenta 100% cliente (localStorage, iframe): evita divergência de hidratação.
+  if (!origin) return <div className="studio" />;
 
   return (
     <div className="studio">
-      <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden>
-            ❦
-          </span>
-          <div>
-            <h1>Devocional Premium</h1>
-            <p>Miolo colorido, miolo preto e branco e EPUB a partir de um JSON</p>
-          </div>
-        </div>
-        <div className="actions">
-          <button className="btn primary" disabled={!book || anyBusy} onClick={exportAll}>
-            {busy.zip ? "Gerando pacote…" : "Exportar tudo (.zip)"}
-          </button>
-          <button className="btn" disabled={!book || anyBusy} onClick={() => exportPdf("color")}>
-            {busy.color ? "Gerando…" : "PDF colorido"}
-          </button>
-          <button className="btn" disabled={!book || anyBusy} onClick={() => exportPdf("bw")}>
-            {busy.bw ? "Gerando…" : "PDF preto e branco"}
-          </button>
-          <button className="btn" disabled={!book || anyBusy} onClick={exportEpub}>
-            {busy.epub ? "Gerando…" : "EPUB"}
-          </button>
-        </div>
-      </header>
+      <aside className="sidebar">
+          <header className="brand">
+            <span className="brand-mark" aria-hidden>
+              ❦
+            </span>
+            <div>
+              <h1>Devocional Premium</h1>
+              <p>Miolo colorido, miolo P&amp;B e EPUB a partir de um JSON</p>
+            </div>
+          </header>
 
-      {exportError && (
-        <div className="banner error">
-          <strong>Falha na exportação:</strong> {exportError}
-          <button onClick={() => setExportError(null)} aria-label="Fechar">
-            ×
-          </button>
-        </div>
-      )}
+          <section className="panel">
+            <h2>Exportar</h2>
+            <button className="btn primary block" disabled={!book || anyBusy} onClick={exportAll}>
+              {busy.zip ? "Gerando pacote…" : "Exportar tudo (.zip)"}
+            </button>
+            <div className="export-grid">
+              <button className="btn" disabled={!book || anyBusy} onClick={() => exportPdf("color")}>
+                {busy.color ? "Gerando…" : "PDF colorido"}
+              </button>
+              <button className="btn" disabled={!book || anyBusy} onClick={() => exportPdf("bw")}>
+                {busy.bw ? "Gerando…" : "PDF P&B"}
+              </button>
+              <button className="btn" disabled={!book || anyBusy} onClick={exportEpub}>
+                {busy.epub ? "Gerando…" : "EPUB"}
+              </button>
+            </div>
+            {exportError && (
+              <div className="messages error">
+                <strong>Falha na exportação:</strong> {exportError}{" "}
+                <button className="link" onClick={() => setExportError(null)}>
+                  fechar
+                </button>
+              </div>
+            )}
+          </section>
 
-      <div className="workspace">
-        <aside className="sidebar">
           <section className="panel">
             <h2>1. Conteúdo (JSON)</h2>
             <div
@@ -527,42 +556,10 @@ export default function Studio() {
               Restaurar padrões
             </button>
           </section>
-        </aside>
-
-        <main className="preview">
-          <div className="preview-bar">
-            <div className="tabs" role="tablist">
-              {(["color", "bw"] as const).map((t) => (
-                <button key={t} role="tab" aria-selected={theme === t} className={theme === t ? "active" : ""} onClick={() => setTheme(t)}>
-                  {t === "color" ? "Colorida" : "Preto e branco"}
-                </button>
-              ))}
-            </div>
-            {report && book && (
-              <select
-                className="goto"
-                defaultValue=""
-                onChange={(e) => {
-                  if (e.target.value) gotoPage(Number(e.target.value));
-                  e.target.value = "";
-                }}
-              >
-                <option value="">Ir para…</option>
-                <option value="1">Início</option>
-                {report.days.map((d) => (
-                  <option key={d.day} value={d.start}>
-                    Dia {d.day} · p. {d.start} ({d.pages} pág.)
-                  </option>
-                ))}
-              </select>
-            )}
-            <span className="status">
-              {rendering ? "Diagramando…" : report ? `${report.totalPages} páginas · ${report.elapsedMs} ms` : ""}
-            </span>
-          </div>
 
           {report && book && (
-            <div className="report">
+            <section className="panel">
+              <h2>5. Resultado</h2>
               <div className="stats">
                 <div>
                   <b>{report.totalPages}</b>
@@ -580,7 +577,7 @@ export default function Studio() {
                   <b>
                     {report.fontSizePt}pt / {report.lineHeight}
                   </b>
-                  <span>{fitAdjusted ? "ajustado automaticamente" : "corpo / entrelinha"}</span>
+                  <span>{fitAdjusted ? "ajustado auto." : "corpo / entrelinha"}</span>
                 </div>
                 <div>
                   <b>{report.margins.inside.toFixed(3)}″</b>
@@ -608,14 +605,64 @@ export default function Studio() {
                 <EditionCard title="Edição colorida" summary={editionSummary("color", report, settings)} />
                 <EditionCard title="Edição preto e branco" summary={editionSummary("bw", report, settings)} />
               </div>
-            </div>
+            </section>
           )}
+      </aside>
+
+      <main className="viewer">
+          <div className="preview-bar">
+            <div className="tabs" role="tablist">
+              {(["color", "bw"] as const).map((t) => (
+                <button key={t} role="tab" aria-selected={theme === t} className={theme === t ? "active" : ""} onClick={() => setTheme(t)}>
+                  {t === "color" ? "Colorida" : "Preto e branco"}
+                </button>
+              ))}
+            </div>
+            {report && book && (
+              <select
+                className="goto"
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) gotoPage(Number(e.target.value));
+                  e.target.value = "";
+                }}
+              >
+                <option value="">Ir para…</option>
+                <option value="1">Início</option>
+                {report.days.map((d) => (
+                  <option key={d.day} value={d.start}>
+                    Dia {d.day} · p. {d.start} ({d.pages} pág.)
+                  </option>
+                ))}
+              </select>
+            )}
+            <select className="goto" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
+              {ZOOMS.map((z) => (
+                <option key={z.value} value={z.value}>
+                  {z.value === 0 ? `${z.label} (${Math.round(fitScale * 100)}%)` : z.label}
+                </option>
+              ))}
+            </select>
+            <span className="status">
+              {rendering ? "Diagramando…" : report ? `${report.totalPages} páginas · ${report.elapsedMs} ms` : ""}
+            </span>
+          </div>
 
           {previewError && <div className="banner error">Erro na diagramação: {previewError}</div>}
 
-          <div className="frame-wrap">
+          <div className="frame-wrap" ref={frameWrapRef}>
             {previewHtml ? (
-              <iframe ref={iframeRef} title="Preview do livro" srcDoc={previewHtml} />
+              <iframe
+                ref={iframeRef}
+                title="Preview do livro"
+                srcDoc={previewHtml}
+                style={{
+                  width: `${100 / scale}%`,
+                  height: `${100 / scale}%`,
+                  transform: `scale(${scale})`,
+                  transformOrigin: "0 0",
+                }}
+              />
             ) : (
               <div className="empty">
                 <p>Carregue um JSON de devocional para ver as páginas diagramadas.</p>
@@ -626,8 +673,7 @@ export default function Studio() {
               </div>
             )}
           </div>
-        </main>
-      </div>
+      </main>
     </div>
   );
 }
