@@ -1,5 +1,6 @@
 export type Language = "en" | "pt";
 export type Theme = "color" | "bw";
+export type Palette = "creme" | "verde" | "azul" | "rosa" | "lilas" | "amarelo";
 
 export interface Card {
   title: string;

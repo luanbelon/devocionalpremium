@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   try {
     const color = await renderPdf(browser, book, settings, "color");
     const bw = await renderPdf(browser, book, settings, "bw");
-    const epub = await buildEpub(book);
+    const epub = await buildEpub(book, settings.colorPalette);
     const slug = book.bookId;
 
     const relatorio = {
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     };
 
     const zip = new JSZip();
-    zip.file(`${slug}_interior_colorido.pdf`, color.pdf);
+    zip.file(`${slug}_interior_colorido-${settings.colorPalette}.pdf`, color.pdf);
     zip.file(`${slug}_interior_preto-e-branco.pdf`, bw.pdf);
     zip.file(`${slug}.epub`, epub);
     zip.file("relatorio-kdp.json", JSON.stringify(relatorio, null, 2));

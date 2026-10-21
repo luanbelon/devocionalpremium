@@ -26,7 +26,11 @@ const FONTS = [
   ],
 ];
 
-const ICONS = ["ramo_color", "ramo_bw", "maos_color", "maos_bw"];
+const iconsDir = path.join(root, "assets", "icons");
+const ICONS = fs
+  .readdirSync(iconsDir)
+  .filter((f) => f.endsWith(".png"))
+  .map((f) => f.replace(/\.png$/, ""));
 
 fs.mkdirSync(fontsOut, { recursive: true });
 fs.mkdirSync(samplesOut, { recursive: true });
@@ -48,7 +52,7 @@ for (const [pkg, family, variants] of FONTS) {
 
 const icons = {};
 for (const name of ICONS) {
-  const src = path.join(root, "assets", "icons", `${name}.png`);
+  const src = path.join(iconsDir, `${name}.png`);
   icons[name] = `data:image/png;base64,${fs.readFileSync(src).toString("base64")}`;
 }
 

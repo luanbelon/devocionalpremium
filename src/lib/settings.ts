@@ -1,4 +1,7 @@
 import { TRIM_SIZES, type EditionType, type PaperType } from "./kdp";
+import type { Palette } from "./types";
+
+export const PALETTE_KEYS = ["creme", "verde", "azul", "rosa", "lilas", "amarelo"] as const satisfies readonly Palette[];
 
 export interface Settings {
   editionType: EditionType;
@@ -16,6 +19,7 @@ export interface Settings {
   ornamentPx: number;
   includeFrontMatter: boolean;
   colorInk: "premium_color" | "standard_color";
+  colorPalette: Palette;
   bwPaper: PaperType;
   year: string;
 }
@@ -37,6 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ornamentPx: 42,
   includeFrontMatter: true,
   colorInk: "premium_color",
+  colorPalette: "creme",
   bwPaper: "cream",
   year: String(new Date().getFullYear()),
 };
@@ -74,6 +79,7 @@ export function sanitizeSettings(input: unknown, base: Settings = DEFAULT_SETTIN
     ornamentPx: num(s.ornamentPx, base.ornamentPx, 8, 80),
     includeFrontMatter: bool(s.includeFrontMatter, base.includeFrontMatter),
     colorInk: pick(s.colorInk, ["premium_color", "standard_color"] as const, base.colorInk),
+    colorPalette: pick(s.colorPalette ?? s.paleta, PALETTE_KEYS, base.colorPalette),
     bwPaper: pick(s.bwPaper, ["cream", "white"] as const, base.bwPaper),
     year: typeof s.year === "string" || typeof s.year === "number" ? String(s.year).slice(0, 8) : base.year,
   };

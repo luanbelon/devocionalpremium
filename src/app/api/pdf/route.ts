@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const browser = await launchBrowser();
   try {
     const { pdf, report } = await renderPdf(browser, book, settings, theme);
-    const suffix = theme === "color" ? "colorido" : "preto-e-branco";
+    const suffix = theme === "color" ? `colorido-${settings.colorPalette}` : "preto-e-branco";
     return new Response(Buffer.from(pdf), {
       headers: {
         "Content-Type": "application/pdf",

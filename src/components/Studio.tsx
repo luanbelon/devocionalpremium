@@ -10,6 +10,7 @@ import { KDP_RULES_VERSION, pageGeometry, TRIM_SIZES } from "@/lib/kdp";
 import { normalizeBookJson, type NormalizeResult } from "@/lib/normalize";
 import { editionSummary, type EditionSummary } from "@/lib/report";
 import { DEFAULT_SETTINGS, sanitizeSettings, type Settings } from "@/lib/settings";
+import { PALETTE_ORDER, PALETTES } from "@/lib/themes";
 import type { Book, BookReport, Theme } from "@/lib/types";
 
 const STORAGE_KEY = "devocional-premium:v3";
@@ -278,13 +279,13 @@ export default function Studio() {
     run(t, async () => {
       if (!book) return;
       const blob = await requestPdf(book, settings, t);
-      download(blob, `${book.bookId}_interior_${t === "color" ? "colorido" : "preto-e-branco"}.pdf`);
+      download(blob, `${book.bookId}_interior_${t === "color" ? `colorido-${settings.colorPalette}` : "preto-e-branco"}.pdf`);
     });
 
   const exportEpub = () =>
     run("epub", async () => {
       if (!book) return;
-      const bytes = await buildEpub(book);
+      const bytes = await buildEpub(book, settings.colorPalette);
       download(new Blob([bytes as BlobPart], { type: "application/epub+zip" }), epubFileName(book));
     });
 
@@ -294,10 +295,10 @@ export default function Studio() {
       const [color, bw, epub] = await Promise.all([
         requestPdf(book, settings, "color"),
         requestPdf(book, settings, "bw"),
-        buildEpub(book),
+        buildEpub(book, settings.colorPalette),
       ]);
       const zip = new JSZip();
-      zip.file(`${book.bookId}_interior_colorido.pdf`, color);
+      zip.file(`${book.bookId}_interior_colorido-${settings.colorPalette}.pdf`, color);
       zip.file(`${book.bookId}_interior_preto-e-branco.pdf`, bw);
       zip.file(epubFileName(book), epub);
       if (report) {
@@ -480,7 +481,35 @@ export default function Studio() {
           )}
 
           <section className="panel">
-            <h2>3. Formato KDP</h2>
+            <h2>3. Paleta da versão colorida</h2>
+            <div className="palettes" role="radiogroup" aria-label="Paleta de cores">
+              {PALETTE_ORDER.map((key) => {
+                const p = PALETTES[key];
+                const active = settings.colorPalette === key;
+                return (
+                  <button
+                    key={key}
+                    role="radio"
+                    aria-checked={active}
+                    className={`palette ${active ? "active" : ""}`}
+                    onClick={() => {
+                      update("colorPalette", key);
+                      setTheme("color");
+                    }}
+                  >
+                    <span className="swatch" style={{ background: p.vars["--card-bg"], borderColor: p.vars["--badge-border"] }}>
+                      <span style={{ background: p.swatch }} />
+                    </span>
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="hint">A versão preto e branco continua só em tons de cinza, como exige o KDP.</p>
+          </section>
+
+          <section className="panel">
+            <h2>4. Formato KDP</h2>
             <div className="grid2">
               <label className="field">
                 <span>Encadernação</span>
@@ -535,7 +564,7 @@ export default function Studio() {
           </section>
 
           <section className="panel">
-            <h2>4. Tipografia</h2>
+            <h2>5. Tipografia</h2>
             <div className="grid2">
               <NumberField label="Corpo do texto" value={settings.fontSizePt} step={0.1} suffix="pt" onChange={(v) => update("fontSizePt", v)} />
               <NumberField label="Entrelinha" value={settings.lineHeight} step={0.02} onChange={(v) => update("lineHeight", v)} />
@@ -561,7 +590,7 @@ export default function Studio() {
 
           {report && book && (
             <section className="panel">
-              <h2>5. Resultado</h2>
+              <h2>6. Resultado</h2>
               <div className="stats">
                 <div>
                   <b>{report.totalPages}</b>
@@ -616,7 +645,7 @@ export default function Studio() {
             <div className="tabs" role="tablist">
               {(["color", "bw"] as const).map((t) => (
                 <button key={t} role="tab" aria-selected={theme === t} className={theme === t ? "active" : ""} onClick={() => setTheme(t)}>
-                  {t === "color" ? "Colorida" : "Preto e branco"}
+                  {t === "color" ? `Colorida · ${PALETTES[settings.colorPalette].label}` : "Preto e branco"}
                 </button>
               ))}
             </div>

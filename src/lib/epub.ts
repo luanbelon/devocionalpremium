@@ -1,7 +1,7 @@
 import JSZip from "jszip";
 import { LABELS } from "./i18n";
-import { THEMES } from "./themes";
-import type { Book } from "./types";
+import { themeDef } from "./themes";
+import type { Book, Palette } from "./types";
 
 const EPUB_CSS = `@charset "utf-8";
 body { margin: 5% 7%; font-family: "EB Garamond", Garamond, Georgia, serif; color: #241C18; line-height: 1.6; }
@@ -37,6 +37,25 @@ p.para { text-align: justify; margin: 0 0 0.9em; text-indent: 0; }
 .card-title { font-size: 0.8em; font-weight: bold; letter-spacing: 0.16em; color: #2B211B; text-transform: uppercase; vertical-align: middle; }
 .card-text { margin: 0; text-align: justify; }
 `;
+
+// EPUB_CSS é escrito com os tons da paleta Creme; cada cor é trocada pela
+// equivalente da paleta escolhida.
+const CREME_TO_VAR: Record<string, string> = {
+  "#241C18": "--ink",
+  "#1A1311": "--ink-strong",
+  "#4A3D37": "--header-text",
+  "#4A3F37": "--ref",
+  "#D8CCBE": "--header-line",
+  "#7A6A5E": "--muted",
+  "#BEAEA0": "--badge-border",
+  "#F4EFE9": "--badge-bg",
+  "#2B211B": "--card-title",
+  "#F5F1E9": "--card-bg",
+};
+
+function epubCss(vars: Record<string, string>): string {
+  return EPUB_CSS.replace(/#[0-9A-F]{6}/g, (hex) => vars[CREME_TO_VAR[hex]] ?? hex);
+}
 
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -82,11 +101,12 @@ export function epubFileName(book: Book): string {
   return `${book.bookId || "devocional"}.epub`;
 }
 
-export async function buildEpub(book: Book): Promise<Uint8Array> {
+export async function buildEpub(book: Book, paletteKey: Palette = "creme"): Promise<Uint8Array> {
   const lang = book.language === "pt" ? "pt-BR" : "en-US";
   const labels = LABELS[book.language];
   const fm = book.frontMatter;
-  const icons = THEMES.color.icons;
+  const palette = themeDef("color", paletteKey);
+  const icons = palette.icons;
   const chapters: Chapter[] = [];
   const add = (id: string, title: string, body: string, inToc: boolean, bodyType?: string) =>
     chapters.push({ id, file: `text/${id}.xhtml`, title, html: xhtml(lang, title, body, bodyType), inToc });
@@ -274,7 +294,7 @@ ${chapters.map((c) => `<itemref idref="${c.id}"/>`).join("\n")}
   zip.file("OEBPS/content.opf", opf);
   zip.file("OEBPS/nav.xhtml", nav);
   zip.file("OEBPS/toc.ncx", ncx);
-  zip.file("OEBPS/styles/style.css", EPUB_CSS);
+  zip.file("OEBPS/styles/style.css", epubCss(palette.vars));
   zip.file("OEBPS/images/ramo.png", icons.ramo.split(",")[1], { base64: true });
   zip.file("OEBPS/images/maos.png", icons.maos.split(",")[1], { base64: true });
   for (const c of chapters) zip.file(`OEBPS/${c.file}`, c.html);

@@ -2,7 +2,7 @@ import { GUTTER_TIERS, MIN_OUTSIDE_MARGIN, pageGeometry } from "./kdp";
 import { LABELS } from "./i18n";
 import { PAGINATOR_JS } from "./paginator";
 import type { Settings } from "./settings";
-import { THEMES } from "./themes";
+import { themeDef } from "./themes";
 import type { Book, Theme } from "./types";
 
 export interface BuildHtmlOptions {
@@ -321,7 +321,7 @@ const escapeHtml = (s: string) =>
 
 export function buildBookHtml(book: Book, settings: Settings, opts: BuildHtmlOptions): string {
   const geo = pageGeometry(settings.trimSize, settings.editionType, settings.bleed);
-  const theme = THEMES[opts.theme];
+  const theme = themeDef(opts.theme, settings.colorPalette);
   const labels = LABELS[book.language];
 
   const rootVars = {
