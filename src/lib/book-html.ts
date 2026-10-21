@@ -22,6 +22,7 @@ body {
   font-kerning: normal;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+  overflow-wrap: break-word;
 }
 #book { width: var(--page-w); }
 

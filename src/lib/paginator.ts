@@ -430,6 +430,67 @@ export const PAGINATOR_JS = String.raw`
     return rep;
   }
 
+  // Auditoria final: todo elemento impresso precisa estar dentro da área
+  // segura do KDP, medida a partir da borda do PDF (a calha pelo total real de
+  // páginas; topo, pé e lado externo pelo mínimo com ou sem sangria).
+  function auditMargins(rep) {
+    var PX = 96, TOL = 0.5;
+    var minOut = S.bleed ? MIN_OUT.bleed : MIN_OUT.noBleed;
+    var minIn = minGutter(rep.totalPages);
+    var violations = [];
+    var add = function (page, what) { violations.push({ page: page, issue: what }); };
+    var label = function (node) {
+      var c = node.classList;
+      if (c.contains('running-header')) return 'cabeçalho';
+      if (c.contains('page-footer')) return 'número da página';
+      if (c.contains('card') || c.contains('cards')) return 'card';
+      if (c.contains('scripture')) return 'versículo';
+      if (c.contains('day-open')) return 'abertura do dia';
+      if (node.tagName === 'IMG') return 'imagem';
+      return 'texto';
+    };
+
+    root.querySelectorAll('.page').forEach(function (pg) {
+      var n = Number(pg.getAttribute('data-page'));
+      var r = pg.getBoundingClientRect();
+      var recto = n % 2 === 1;
+      var safe = {
+        left: r.left + (recto ? minIn : minOut) * PX,
+        right: r.right - (recto ? minOut : minIn) * PX,
+        top: r.top + minOut * PX,
+        bottom: r.bottom - minOut * PX
+      };
+      pg.querySelectorAll('.running-header, .page-footer, .page-body > *, .page-body img').forEach(function (node) {
+        var b = node.getBoundingClientRect();
+        if (!b.width && !b.height) return;
+        var out = [];
+        if (b.left < safe.left - TOL) out.push((recto ? 'calha' : 'margem externa') + ' (esquerda)');
+        if (b.right > safe.right + TOL) out.push((recto ? 'margem externa' : 'calha') + ' (direita)');
+        if (b.top < safe.top - TOL) out.push('margem superior');
+        if (b.bottom > safe.bottom + TOL) out.push('margem inferior');
+        if (out.length) add(n, label(node) + ' invade ' + out.join(', '));
+      });
+      var body = pg.querySelector('.page-body');
+      if (body && overflows(body)) add(n, 'conteúdo maior que a mancha (seria cortado)');
+      if (body) {
+        body.querySelectorAll('.para, .card-text, .scripture-text, .toc-title, .fm-title').forEach(function (el) {
+          if (el.scrollWidth > el.clientWidth + 1) add(n, label(el) + ' ultrapassa a largura da mancha');
+        });
+      }
+    });
+
+    rep.marginCheck = {
+      ok: violations.length === 0,
+      minInside: minIn,
+      minOutside: minOut,
+      violations: violations.slice(0, 50),
+      violationCount: violations.length
+    };
+    if (violations.length) {
+      rep.warnings.push(violations.length + ' problema(s) de margem KDP (ex.: p. ' + violations[0].page + ': ' + violations[0].issue + ').');
+    }
+  }
+
   function publish(rep) {
     window.__BOOK_REPORT__ = rep;
     docEl.setAttribute('data-ready', '1');
@@ -458,7 +519,7 @@ export const PAGINATOR_JS = String.raw`
       var rep = run();
       var imgs = Array.prototype.slice.call(document.images);
       return Promise.all(imgs.map(function (i) { return i.decode ? i.decode().catch(function () {}) : null; }))
-        .then(function () { publish(rep); });
+        .then(function () { auditMargins(rep); publish(rep); });
     })
     .catch(fail);
 })();

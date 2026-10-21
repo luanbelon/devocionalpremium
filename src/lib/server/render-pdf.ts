@@ -27,6 +27,13 @@ export async function renderPdf(browser: Browser, book: Book, settings: Settings
     const error = (await page.evaluate("window.__BOOK_ERROR__ || null")) as string | null;
     if (error) throw new Error(`Falha na paginação: ${error}`);
     const report = (await page.evaluate("window.__BOOK_REPORT__")) as BookReport;
+    if (!report.marginCheck.ok) {
+      const sample = report.marginCheck.violations
+        .slice(0, 5)
+        .map((v) => `p. ${v.page}: ${v.issue}`)
+        .join("; ");
+      throw new Error(`Margens fora das regras do KDP em ${report.marginCheck.violationCount} ponto(s) — ${sample}`);
+    }
 
     const raw = await page.pdf({
       printBackground: true,

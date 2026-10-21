@@ -63,6 +63,13 @@ export interface BookReport {
   maxDayPages: number;
   overflowDays: number[];
   warnings: string[];
+  marginCheck: {
+    ok: boolean;
+    minInside: number;
+    minOutside: number;
+    violations: { page: number; issue: string }[];
+    violationCount: number;
+  };
   layoutPasses: number;
   elapsedMs: number;
 }

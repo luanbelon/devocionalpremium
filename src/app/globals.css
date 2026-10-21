@@ -353,6 +353,32 @@ details.messages summary {
   border-radius: 50%;
 }
 
+.margin-check {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.margin-check.ok {
+  background: #e7f2e8;
+  color: var(--ok);
+}
+
+.margin-check.bad {
+  background: #fbebe7;
+  color: var(--danger);
+}
+
+.margin-check span {
+  color: var(--text);
+  opacity: 0.8;
+}
+
 .ornament-row {
   display: flex;
   gap: 12px;

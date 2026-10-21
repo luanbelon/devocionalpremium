@@ -623,6 +623,12 @@ export default function Studio() {
               <NumberField label="Superior" value={settings.marginTop} step={0.025} onChange={(v) => update("marginTop", v)} />
               <NumberField label="Inferior" value={settings.marginBottom} step={0.025} onChange={(v) => update("marginBottom", v)} />
             </div>
+            <p className="hint">
+              Mínimos do KDP{report ? ` para ${report.totalPages} páginas` : ""}: calha{" "}
+              {(report?.marginCheck?.minInside ?? 0.375).toFixed(3)}″ e externa/superior/inferior{" "}
+              {(settings.bleed ? 0.375 : 0.25).toFixed(3)}″{settings.bleed ? " (com sangria)" : ""}. Valores menores são elevados
+              automaticamente, e cabeçalho e número de página ficam sempre dentro da área segura.
+            </p>
           </section>
 
           <section className="panel">
@@ -676,6 +682,25 @@ export default function Studio() {
                   <span>calha aplicada</span>
                 </div>
               </div>
+              {report.marginCheck && (
+                <div className={`margin-check ${report.marginCheck.ok ? "ok" : "bad"}`}>
+                  <strong>
+                    {report.marginCheck.ok
+                      ? `Margens KDP conferidas nas ${report.totalPages} páginas`
+                      : `${report.marginCheck.violationCount} problema(s) de margem KDP — exportação bloqueada`}
+                  </strong>
+                  <span>
+                    Aplicado: calha {report.margins.inside.toFixed(3)}″ (mín. {report.marginCheck.minInside.toFixed(3)}″) · externa{" "}
+                    {report.margins.outside.toFixed(3)}″ · superior {report.margins.top.toFixed(3)}″ · inferior{" "}
+                    {report.margins.bottom.toFixed(3)}″ (mín. {report.marginCheck.minOutside.toFixed(3)}″)
+                  </span>
+                  {report.marginCheck.violations.slice(0, 6).map((v, i) => (
+                    <button key={i} className="link" onClick={() => gotoPage(v.page)}>
+                      p. {v.page}: {v.issue}
+                    </button>
+                  ))}
+                </div>
+              )}
               {(report.warnings.length > 0 || report.days.some((d) => d.cardsAlone)) && (
                 <ul className="messages warn">
                   {report.warnings.map((w) => (
