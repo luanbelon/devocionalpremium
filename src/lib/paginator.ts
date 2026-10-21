@@ -96,10 +96,11 @@ export const PAGINATOR_JS = String.raw`
       if (m) {
         p.appendChild(el('span', 'dropcap', m[1] + m[2]));
         p.appendChild(document.createTextNode(m[3] + (words.length > 1 ? ' ' + words.slice(1).join(' ') : '')));
-        return p;
       }
     }
-    p.textContent = words.join(' ');
+    if (!p.firstChild) p.textContent = words.join(' ');
+    p.__words = words;
+    p.__opt = o;
     return p;
   }
 
@@ -114,17 +115,21 @@ export const PAGINATOR_JS = String.raw`
 
   // Maior prefixo (em palavras) que cabe no corpo da página, opcionalmente
   // limitado a maxLines linhas.
-  function maxFit(body, words, o, maxLines, lh) {
-    var lo = 1, hi = words.length - 1, best = 0;
+  function maxFitBy(body, n, build, maxLines, lh, textOf) {
+    var lo = 1, hi = n - 1, best = 0;
     while (lo <= hi) {
       var mid = (lo + hi) >> 1;
-      var part = makePara(words.slice(0, mid), o);
+      var part = build(mid);
       body.appendChild(part);
-      var ok = !overflows(body) && (!maxLines || linesOf(part, lh) <= maxLines);
+      var ok = !overflows(body) && (!maxLines || linesOf(textOf(part), lh) <= maxLines);
       body.removeChild(part);
       if (ok) { best = mid; lo = mid + 1; } else { hi = mid - 1; }
     }
     return best;
+  }
+
+  function maxFit(body, words, o, maxLines, lh) {
+    return maxFitBy(body, words.length, function (k) { return makePara(words.slice(0, k), o); }, maxLines, lh, function (e) { return e; });
   }
 
   function placeText(cur, text, opt, nextPage) {
@@ -143,8 +148,7 @@ export const PAGINATOR_JS = String.raw`
 
       var part = { dropcap: opt.dropcap, cls: opt.cls, cont: cont, split: true };
       var k = 0;
-      // Páginas encurtadas pelo equilíbrio só quebram entre parágrafos.
-      if (fullLines >= MIN_LINES * 2 && !cur.limited) {
+      if (fullLines >= MIN_LINES * 2) {
         k = maxFit(cur.body, words, part, 0, lh);
         if (k > 0) {
           var probe = makePara(words.slice(0, k), part);
@@ -286,35 +290,82 @@ export const PAGINATOR_JS = String.raw`
     return w;
   }
 
-  function cardsBlock(day, alone) {
-    var w = el('div', 'cards' + (alone ? ' alone' : ''));
-    [['heart', ICONS.ramo, day.heart], ['prayer', ICONS.maos, day.prayer]].forEach(function (c) {
-      if (!c[2] || !c[2].text) return;
-      var card = el('div', 'card card-' + c[0]);
+  function dayCards(day) {
+    return [['heart', ICONS.ramo, day.heart], ['prayer', ICONS.maos, day.prayer]].filter(function (c) {
+      return c[2] && c[2].text;
+    });
+  }
+
+  // o: { cont, split, flow }. Continuações (cont) não repetem ícone nem título.
+  function makeCard(c, words, o) {
+    var card = el('div', 'card card-' + c[0] + (o.flow ? ' flow' : '') + (o.cont ? ' cont' : ''));
+    if (!o.cont) {
       var ic = el('div', 'card-icon');
       ic.appendChild(img(c[1]));
       card.appendChild(ic);
-      var tx = el('div', 'card-body');
-      tx.appendChild(el('div', 'card-title', c[2].title));
-      tx.appendChild(el('div', 'card-text', c[2].text));
-      card.appendChild(tx);
-      w.appendChild(card);
-    });
-    return w.children.length ? w : null;
+    }
+    var tx = el('div', 'card-body');
+    if (!o.cont) tx.appendChild(el('div', 'card-title', c[2].title));
+    tx.appendChild(el('div', 'card-text' + (o.split ? ' split' : ''), words.join(' ')));
+    card.appendChild(tx);
+    return card;
   }
 
-  // limit: { frac, applies(i) } restringe a altura útil das páginas i do dia,
-  // empurrando texto para a frente.
-  function renderDayOnce(day, limit) {
+  function cardsBlock(day) {
+    var list = dayCards(day);
+    if (!list.length) return null;
+    var w = el('div', 'cards');
+    list.forEach(function (c) { w.appendChild(makeCard(c, c[2].text.split(/\s+/), {})); });
+    return w;
+  }
+
+  // Card em fluxo contínuo: entra logo após o conteúdo anterior e, se não
+  // couber, quebra o texto com as mesmas regras de viúvas e órfãs.
+  function placeCard(cur, c, nextPage) {
+    var words = c[2].text.split(/\s+/).filter(Boolean);
+    var cont = false;
+    var guard = 0;
+    var textOf = function (e) { return e.querySelector('.card-text'); };
+    while (words.length && guard++ < 50) {
+      var full = makeCard(c, words, { flow: true, cont: cont });
+      cur.body.appendChild(full);
+      if (!overflows(cur.body)) return cur;
+      var lh = lineHeightOf(textOf(full));
+      var fullLines = linesOf(textOf(full), lh);
+      cur.body.removeChild(full);
+
+      var o = { flow: true, cont: cont, split: true };
+      var build = function (k) { return makeCard(c, words.slice(0, k), o); };
+      var k = 0;
+      if (fullLines >= MIN_LINES * 2) {
+        k = maxFitBy(cur.body, words.length, build, 0, lh, textOf);
+        if (k > 0) {
+          var probe = build(k);
+          cur.body.appendChild(probe);
+          var l1 = linesOf(textOf(probe), lh);
+          cur.body.removeChild(probe);
+          if (l1 < MIN_LINES) k = 0;
+          else if (fullLines - l1 < MIN_LINES) k = maxFitBy(cur.body, words.length, build, fullLines - MIN_LINES, lh, textOf);
+        }
+      }
+      if (k > 0) {
+        cur.body.appendChild(build(k));
+        words = words.slice(k);
+        cont = true;
+      } else if (!cur.body.children.length) {
+        cur.body.appendChild(full);
+        return cur;
+      }
+      cur = nextPage();
+    }
+    return cur;
+  }
+
+  function renderDay(day) {
+    if (S.openingRule === 'recto') ensureRecto();
     var pages = [];
     var open = function () {
       var c = newPage('day', true);
-      if (limit && limit.applies(pages.length)) {
-        var h = c.body.getBoundingClientRect().height;
-        c.body.style.flex = 'none';
-        c.body.style.height = (h * limit.frac) + 'px';
-        c.limited = true;
-      }
       pages.push(c);
       return c;
     };
@@ -324,72 +375,23 @@ export const PAGINATOR_JS = String.raw`
       cur = placeText(cur, t, { dropcap: i === 0 }, open);
     });
 
-    var alone = false;
-    var cards = cardsBlock(day, false);
-    if (cards) {
-      cur.body.appendChild(cards);
+    // Cards inteiros cabem: ficam no pé da última página. Senão seguem o
+    // fluxo do texto, para nunca deixar espaço vazio no pé de uma página.
+    var cardsStartNewPage = false;
+    var block = cardsBlock(day);
+    if (block) {
+      cur.body.appendChild(block);
       if (overflows(cur.body)) {
-        cur.body.removeChild(cards);
-        cur = open();
-        cur.body.appendChild(cardsBlock(day, true));
-        alone = true;
-      }
-    }
-    return { pages: pages, alone: alone };
-  }
-
-  function rollbackTo(pageNo) {
-    while (state.pageNo > pageNo && root.lastElementChild) {
-      root.removeChild(root.lastElementChild);
-      state.pageNo--;
-    }
-  }
-
-  // Distribui a sobra vertical entre os parágrafos de uma página encurtada.
-  function spread(c) {
-    c.body.style.flex = '';
-    c.body.style.height = '';
-    var paras = Array.prototype.filter.call(c.body.children, function (n) { return n.classList.contains('para'); });
-    if (paras.length < 2) return;
-    var last = c.body.lastElementChild;
-    var free = c.body.getBoundingClientRect().bottom - bottomOf(last);
-    if (free <= 1) return;
-    var lh = lineHeightOf(paras[0]);
-    var extra = Math.min(free / (paras.length - 1), lh * 1.2);
-    var base = parseFloat(getComputedStyle(paras[1]).marginTop) || 0;
-    for (var i = 1; i < paras.length; i++) paras[i].style.marginTop = (base + extra) + 'px';
-  }
-
-  function renderDay(day) {
-    if (S.openingRule === 'recto') ensureRecto();
-    var mark = state.pageNo;
-    var r = renderDayOnce(day, null);
-
-    // Cards sozinhos numa página: leva o mínimo de texto (parágrafos inteiros)
-    // para a última página, que passa a ter texto + cards no rodapé, como nos
-    // modelos, mantendo o mesmo número de páginas do dia.
-    if (r.alone && state.balance) {
-      var textPages = r.pages.length - 1;
-      var applies = textPages >= 2
-        ? function (i) { return i >= 1 && i <= textPages - 1; }
-        : function (i) { return i === 0; };
-      var chosen = null;
-      for (var f = 0.95; f >= 0.3 && chosen === null; f -= 0.05) {
-        rollbackTo(mark);
-        var t = renderDayOnce(day, { frac: f, applies: applies });
-        if (!t.alone && t.pages.length === r.pages.length) chosen = f;
-      }
-      rollbackTo(mark);
-      if (chosen !== null) {
-        r = renderDayOnce(day, { frac: chosen, applies: applies });
-        r.pages.forEach(function (c) { if (c.limited) spread(c); });
-      } else {
-        r = renderDayOnce(day, null);
+        cur.body.removeChild(block);
+        var before = cur.n;
+        dayCards(day).forEach(function (c) { cur = placeCard(cur, c, open); });
+        var firstCard = root.querySelector('.page[data-page="' + before + '"] .card');
+        cardsStartNewPage = !firstCard;
       }
     }
 
-    var first = r.pages[0], last = r.pages[r.pages.length - 1];
-    state.days.push({ day: day.day, title: day.title, start: first.n, end: last.n, pages: r.pages.length, cardsAlone: r.alone });
+    var first = pages[0], last = pages[pages.length - 1];
+    state.days.push({ day: day.day, title: day.title, start: first.n, end: last.n, pages: pages.length, cardsAlone: cardsStartNewPage });
   }
 
   // ---------- montagem ----------
@@ -397,7 +399,7 @@ export const PAGINATOR_JS = String.raw`
   function layout(p) {
     root.innerHTML = '';
     setVars(p);
-    state = { pageNo: 0, tocRefs: [], days: [], warnings: [], balance: !!p.balance };
+    state = { pageNo: 0, tocRefs: [], days: [], warnings: [] };
     if (S.includeFrontMatter) renderFrontMatter();
     var fmPages = state.pageNo;
     book.days.forEach(renderDay);
@@ -458,11 +460,9 @@ export const PAGINATOR_JS = String.raw`
       if (!rep.overflowDays.length) break;
     }
 
-    // Passagem final com o equilíbrio de páginas, depois convergência da calha
-    // (a margem interna mínima depende do total de páginas).
-    params = Object.assign({}, params, { balance: true });
-    rep = layout(params);
-    passes++;
+    if (rep !== best) { rep = layout(params); passes++; }
+
+    // Convergência da calha: a margem interna mínima depende do total de páginas.
     for (var g = 0; g < 4; g++) {
       var req = minGutter(rep.totalPages);
       if (req <= params.inside + 1e-9) break;

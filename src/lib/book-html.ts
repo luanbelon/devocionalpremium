@@ -157,7 +157,10 @@ body {
 
 /* Cards do fim do dia */
 .cards { margin-top: auto; padding-top: 16px; display: flex; flex-direction: column; gap: 14px; }
-.cards.alone { margin-top: 0; padding-top: 0; }
+.card.flow { margin-top: 14px; }
+.para + .card.flow { margin-top: 0.95em; }
+.page-body > .card.flow:first-child { margin-top: 0; }
+.card-text.split { text-align-last: justify; }
 .card {
   background: var(--card-bg);
   border: 0.5pt solid var(--card-border);

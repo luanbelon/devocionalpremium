@@ -624,7 +624,7 @@ export default function Studio() {
                     .filter((d) => d.cardsAlone)
                     .map((d) => (
                       <li key={`alone-${d.day}`}>
-                        Dia {d.day}: os cards não couberam e foram para uma página só deles (p. {d.end}).{" "}
+                        Dia {d.day}: a página de texto encheu e os cards começam no topo da página seguinte.{" "}
                         <button className="link" onClick={() => gotoPage(d.end)}>
                           ver
                         </button>
